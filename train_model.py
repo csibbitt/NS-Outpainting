@@ -301,7 +301,7 @@ with tf.Session(config=config) as sess:
                         test_oris = sess.run([test_im])[0]
 
                     inp_dict = {}
-                    inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, images, params)
+                    inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, test_oris, params)
                     inp_dict[learning_rate] = learning_rate_val
                     inp_dict[lambda_rec] = args.lambda_rec
 
