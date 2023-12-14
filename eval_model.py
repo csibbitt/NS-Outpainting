@@ -14,8 +14,8 @@ import math
 
 parser = argparse.ArgumentParser(description='Model testing.')
 # experiment
-parser.add_argument('--date', type=str, default='0817')
-parser.add_argument('--exp-index', type=int, default=2)
+parser.add_argument('--date', type=str, default='1213')
+parser.add_argument('--exp-index', type=int, default=1)
 parser.add_argument('--f', action='store_true', default=False)
 
 # gpu
@@ -210,58 +210,58 @@ with tf.Session(config=config) as sess:
 
         ii = 0
 
-        for _ in range(math.floor(args.testset_length / args.batch_size)):
-            test_oris = sess.run([test_im])[0]
-            origins1 = test_oris.copy()
+        #for _ in range(math.floor(args.testset_length / args.batch_size)):
+        test_oris = sess.run([test_im])[0]
+        origins1 = test_oris.copy()
 
-            oris = None
-            # oris
-            print('oris ' + str(ii))
-            for _ in range(4):
-                inp_dict = {}
-                inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, test_oris, params)
+        oris = None
+        # oris
+        print('oris ' + str(ii))
+        for _ in range(4):
+            inp_dict = {}
+            inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, test_oris, params)
 
-                if oris is None:
-                    reconstruction_vals, prediction_vals = sess.run(
-                        [reconstructions, right_recons],
-                        feed_dict=inp_dict)
+            if oris is None:
+                reconstruction_vals, prediction_vals = sess.run(
+                    [reconstructions, right_recons],
+                    feed_dict=inp_dict)
 
-                    oris = reconstruction_vals
-                    pred1 = oris[:, :, :128, :]
-                    pred2 = oris[:, :, -128:, :]
-                    gt = origins1[:, :, :128, :]
-                    p1_m0 = np.concatenate((gt, pred2), axis=2)
-                    p1_m1 = np.concatenate((gt * stitch_mask1 + pred1 * stitch_mask2, pred2), axis=2)
-                else:
-                    reconstruction_vals, prediction_vals = sess.run(
-                        [reconstruction, right_recons],
-                        feed_dict=inp_dict)
-                    A = oris[:, :, -128:, :]
-                    B = reconstruction_vals[:, :, :128, :]
-                    C = A * stitch_mask1 + B * stitch_mask2 
-                    oris = np.concatenate((oris[:, :, :-128, :], C, prediction_vals), axis=2)
-                test_oris = np.concatenate((prediction_vals, prediction_vals), axis=2)
-            predictions1 = oris
+                oris = reconstruction_vals
+                pred1 = oris[:, :, :128, :]
+                pred2 = oris[:, :, -128:, :]
+                gt = origins1[:, :, :128, :]
+                p1_m0 = np.concatenate((gt, pred2), axis=2)
+                p1_m1 = np.concatenate((gt * stitch_mask1 + pred1 * stitch_mask2, pred2), axis=2)
+            else:
+                reconstruction_vals, prediction_vals = sess.run(
+                    [reconstruction, right_recons],
+                    feed_dict=inp_dict)
+                A = oris[:, :, -128:, :]
+                B = reconstruction_vals[:, :, :128, :]
+                C = A * stitch_mask1 + B * stitch_mask2
+                oris = np.concatenate((oris[:, :, :-128, :], C, prediction_vals), axis=2)
+            test_oris = np.concatenate((prediction_vals, prediction_vals), axis=2)
+        predictions1 = oris
 
-            jj = ii
-            for ori, m0, m1, endless in zip(origins1, p1_m0, p1_m1, predictions1):
-                name = str(jj) + '.jpg'
-                ori = (255. * (ori + 1) / 2.).astype(np.uint8)
-                Image.fromarray(ori).save(os.path.join(
-                    result_path, 'ori_' + name))
+        jj = ii
+        for ori, m0, m1, endless in zip(origins1, p1_m0, p1_m1, predictions1):
+            name = str(jj) + '.jpg'
+            ori = (255. * (ori + 1) / 2.).astype(np.uint8)
+            Image.fromarray(ori).save(os.path.join(
+                result_path, 'ori_' + name))
 
-                m0 = (255. * (m0 + 1) / 2.).astype(np.uint8)
-                Image.fromarray(m0).save(os.path.join(
-                    result_path, 'm0_' + name))
+            m0 = (255. * (m0 + 1) / 2.).astype(np.uint8)
+            Image.fromarray(m0).save(os.path.join(
+                result_path, 'm0_' + name))
 
-                m1 = (255. * (m1 + 1) / 2.).astype(np.uint8)
-                Image.fromarray(m1).save(os.path.join(
-                    result_path, 'm1_' + name))
+            m1 = (255. * (m1 + 1) / 2.).astype(np.uint8)
+            Image.fromarray(m1).save(os.path.join(
+                result_path, 'm1_' + name))
 
-                endless = (255. * (endless + 1) / 2.).astype(np.uint8)
-                Image.fromarray(endless).save(os.path.join(
-                    result_path, 'endless_' + name))
-                jj += 1
+            endless = (255. * (endless + 1) / 2.).astype(np.uint8)
+            Image.fromarray(endless).save(os.path.join(
+                result_path, 'endless_' + name))
+            jj += 1
 
 
-            ii += args.batch_size
+        ii += args.batch_size
