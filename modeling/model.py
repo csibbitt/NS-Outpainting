@@ -41,20 +41,20 @@ class Model():
             initializer = tf.contrib.layers.xavier_initializer()
 
             # First component of main path
-            x = tf.layers.conv2d(X_input, filter1,
-                                 kernel_size=(1, 1), strides=(1, 1), name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filter1,
+                                 kernel_size=(1, 1), strides=(1, 1), name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_input)
             x = normalizer_fn(x)
             x = activation_fn(x)
 
             # Second component of main path
-            x = tf.layers.conv2d(x, filter2, (kernel_size, kernel_size),
-                                 padding='same', name=conv_name_base + '2b', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filter2, (kernel_size, kernel_size),
+                                 padding='same', name=conv_name_base + '2b', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
             x = normalizer_fn(x)
             x = activation_fn(x)
 
             # Third component of main path
-            x = tf.layers.conv2d(x, filter3, kernel_size=(
-                1, 1), name=conv_name_base + '2c', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filter3, kernel_size=(
+                1, 1), name=conv_name_base + '2c', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
             x = normalizer_fn(x)
 
             # Final step: Add shortcut value to main path, and pass it through
@@ -89,28 +89,28 @@ class Model():
             X_shortcut = X_input
 
             # First component of main path
-            x = tf.layers.conv2d(X_input, filter1,
+            x = tf.keras.layers.Conv2D(filter1,
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
-                                 name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+                                 name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_input)
             x = normalizer_fn(x)
             x = activation_fn(x)
 
             # Second component of main path
-            x = tf.layers.conv2d(x, filter2, (kernel_size, kernel_size), strides=(stride, stride), name=conv_name_base +
-                                 '2b', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filter2, (kernel_size, kernel_size), strides=(stride, stride), name=conv_name_base +
+                                 '2b', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
             x = normalizer_fn(x)
             x = activation_fn(x)
 
             # Third component of main path
-            x = tf.layers.conv2d(x, filter3, (1, 1), name=conv_name_base + '2c',
-                                 kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filter3, (1, 1), name=conv_name_base + '2c',
+                                 kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
             x = normalizer_fn(x)
 
 
             # SHORTCUT PATH
-            X_shortcut = tf.layers.conv2d(X_shortcut, filter3, (1, 1),
-                                          strides=(stride, stride), name=conv_name_base + '1', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            X_shortcut = tf.keras.layers.Conv2D(filter3, (1, 1),
+                                          strides=(stride, stride), name=conv_name_base + '1', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_shortcut)
             X_shortcut = normalizer_fn(X_shortcut)
 
             # Final step: Add shortcut value to main path, and pass it through
@@ -231,12 +231,12 @@ class Model():
             initializer = tf.contrib.layers.xavier_initializer()
             # stage 1
 
-            x = tf.layers.conv2d(x, filters=64, kernel_size=(4, 4), strides=(
-                2, 2), name='conv0', kernel_regularizer=regularizer, padding='same', kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4), strides=(
+                2, 2), name='conv0', kernel_regularizer=regularizer, padding='same', kernel_initializer=initializer, use_bias=False)(x)
             x = self.in_lrelu(x)
             short_cut0 = x
-            x = tf.layers.conv2d(x, filters=128, kernel_size=(4, 4), strides=(
-                2, 2), name='conv1', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)
+            x = tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4), strides=(
+                2, 2), name='conv1', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
             x = self.in_lrelu(x)
             short_cut1 = x
 
