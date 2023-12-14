@@ -1,1 +1,1 @@
-python train_model.py  --trainset-path /path/to/tf-record-trainset --testset-path /path/to/tf-record-testset
+python train_model.py  --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr
