@@ -1,6 +1,5 @@
 import tensorflow as tf
-import tensorflow.contrib.layers as ly
-
+import tensorflow_addons as tfa
 
 class Model():
     def __init__(self, cfg):
@@ -8,8 +7,8 @@ class Model():
 
     def new_atrous_conv_layer(self, bottom, filter_shape, rate, name=None):
         with tf.compat.v1.variable_scope(name):
-            regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
-            initializer = tf.contrib.layers.xavier_initializer()
+            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
+            initializer = tf.compat.v1.keras.initializers.glorot_normal()
             W = tf.compat.v1.get_variable(
                 "W",
                 shape=filter_shape,
@@ -28,7 +27,7 @@ class Model():
         else:
             activation_fn=self.leaky_relu
 
-        normalizer_fn = ly.instance_norm
+        normalizer_fn = tfa.layers.InstanceNormalization
 
 
         # defining name basis
@@ -37,25 +36,25 @@ class Model():
         with tf.compat.v1.variable_scope("id_block_stage" + str(stage) + block):
             filter1, filter2, filter3 = filters
             X_shortcut = X_input
-            regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
-            initializer = tf.contrib.layers.xavier_initializer()
+            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
+            initializer = tf.compat.v1.keras.initializers.glorot_normal()
 
             # First component of main path
             x = tf.keras.layers.Conv2D(filter1,
                                  kernel_size=(1, 1), strides=(1, 1), name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_input)
-            x = normalizer_fn(x)
+            x = normalizer_fn()(x)
             x = activation_fn(x)
 
             # Second component of main path
             x = tf.keras.layers.Conv2D(filter2, (kernel_size, kernel_size),
                                  padding='same', name=conv_name_base + '2b', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn(x)
+            x = normalizer_fn()(x)
             x = activation_fn(x)
 
             # Third component of main path
             x = tf.keras.layers.Conv2D(filter3, kernel_size=(
                 1, 1), name=conv_name_base + '2c', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn(x)
+            x = normalizer_fn()(x)
 
             # Final step: Add shortcut value to main path, and pass it through
             x = tf.add(x, X_shortcut)
@@ -71,15 +70,15 @@ class Model():
         else:
             activation_fn=self.leaky_relu
 
-        normalizer_fn = ly.instance_norm
+        normalizer_fn = tfa.layers.InstanceNormalization
 
         # defining name basis
         conv_name_base = 'res' + str(stage) + block + '_branch'
 
         with tf.compat.v1.variable_scope("conv_block_stage" + str(stage) + block):
 
-            regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
-            initializer = tf.contrib.layers.xavier_initializer()
+            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
+            initializer = tf.compat.v1.keras.initializers.glorot_normal()
             # initializer = tf.variance_scaling_initializer(scale=1.0,mode='fan_in')
 
             # Retrieve Filters
@@ -93,25 +92,25 @@ class Model():
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
                                  name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_input)
-            x = normalizer_fn(x)
+            x = normalizer_fn()(x)
             x = activation_fn(x)
 
             # Second component of main path
             x = tf.keras.layers.Conv2D(filter2, (kernel_size, kernel_size), strides=(stride, stride), name=conv_name_base +
                                  '2b', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn(x)
+            x = normalizer_fn()(x)
             x = activation_fn(x)
 
             # Third component of main path
             x = tf.keras.layers.Conv2D(filter3, (1, 1), name=conv_name_base + '2c',
                                  kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn(x)
+            x = normalizer_fn()(x)
 
 
             # SHORTCUT PATH
             X_shortcut = tf.keras.layers.Conv2D(filter3, (1, 1),
                                           strides=(stride, stride), name=conv_name_base + '1', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_shortcut)
-            X_shortcut = normalizer_fn(X_shortcut)
+            X_shortcut = normalizer_fn()(X_shortcut)
 
             # Final step: Add shortcut value to main path, and pass it through
             # a RELU activation
@@ -126,23 +125,23 @@ class Model():
         return f1 * x + f2 * abs(x)
 
     def in_lrelu(self, x, name=None):
-        x = tf.contrib.layers.instance_norm(x)
+        x = tfa.layers.InstanceNormalization()(x)
         x = self.leaky_relu(x)
         return x
 
     def in_relu(self, x, name=None):
-        x = tf.contrib.layers.instance_norm(x)
+        x = tfa.layers.InstanceNormalization()(x)
         x = tf.nn.relu(x)
         return x
 
     def rct(self, x):
-        regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
+        regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
         output_size = x.get_shape().as_list()[3]
         size = 512
         layer_num = 2
         activation_fn = tf.tanh
-        x = ly.conv2d(x, size, 1, stride=1, activation_fn=None,
-                      normalizer_fn=None, padding='SAME', weights_regularizer=regularizer, biases_initializer=None)
+        x = tf.keras.layers.Conv2D(size, 1, strides=(1,1), activation=None,
+                       padding='SAME', kernel_regularizer=regularizer, bias_initializer=None)(x)
         x = self.in_lrelu(x)
         x = tf.transpose(a=x, perm=[0, 2, 1, 3])
         x = tf.reshape(x, [-1, 4, 4 * size])
@@ -183,39 +182,42 @@ class Model():
 
         y = tf.concat(ys, axis=2)
 
-        y = ly.conv2d(y, output_size, 1, stride=1, activation_fn=None,
-                      normalizer_fn=None, padding='SAME', weights_regularizer=regularizer, biases_initializer=None)
+        y = tf.keras.layers.Conv2D(output_size, 1, strides=(1,1), activation=None,
+                       padding='SAME', kernel_regularizer=regularizer, bias_initializer=None)(y)
         y = self.in_lrelu(y)
         return y
 
 
     
     def shc(self, x, shortcut, channels):
-        regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
-        x = ly.conv2d(x, channels / 2, 1, stride=1, activation_fn=tf.nn.relu,
-                      normalizer_fn=tf.contrib.layers.instance_norm, padding='SAME', weights_regularizer=regularizer)
-        x = ly.conv2d(x, channels / 2, 3, stride=1, activation_fn=tf.nn.relu,
-                      normalizer_fn=tf.contrib.layers.instance_norm, padding='SAME', weights_regularizer=regularizer)
-        x = ly.conv2d(x, channels, 1, stride=1, activation_fn=None,
-                      normalizer_fn=tf.contrib.layers.instance_norm, padding='SAME', weights_regularizer=regularizer)
+        regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
+        x = tf.keras.layers.Conv2D(channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
+                      padding='SAME', kernel_regularizer=regularizer)(x)
+        x = tfa.layers.InstanceNormalization()(x)
+        x = tf.keras.layers.Conv2D(channels / 2, 3, strides=(1,1), activation=tf.nn.relu,
+                      padding='SAME', kernel_regularizer=regularizer)(x)
+        x = tfa.layers.InstanceNormalization()(x)
+        x = tf.keras.layers.Conv2D(channels, 1, strides=(1,1), activation=None,
+                      padding='SAME', kernel_regularizer=regularizer)(x)
+        x = tfa.layers.InstanceNormalization()(x)
         return tf.add(shortcut, x)
 
 
     def grb(self, x, filters, rate, name):
         activation_fn = tf.nn.relu
-        normalizer_fn = ly.instance_norm
+        normalizer_fn = tfa.layers.InstanceNormalization
         shortcut = x
         x1 = self.new_atrous_conv_layer(x, [3, 1, filters, filters], rate, name+'_a1')
-        x1 = normalizer_fn(x1)
+        x1 = normalizer_fn()(x1)
         x1 = activation_fn(x1)
         x1 = self.new_atrous_conv_layer(x1, [1, 7, filters, filters], rate, name+'_a2')
-        x1 = normalizer_fn(x1)
+        x1 = normalizer_fn()(x1)
 
         x2 = self.new_atrous_conv_layer(x, [1, 7, filters, filters], rate, name+'_b1')
-        x2 = normalizer_fn(x2)
+        x2 = normalizer_fn()(x2)
         x2 = activation_fn(x2)
         x2 = self.new_atrous_conv_layer(x2, [3, 1, filters, filters], rate, name+'_b2')
-        x2 = normalizer_fn(x2)
+        x2 = normalizer_fn()(x2)
 
         x = tf.add(shortcut, x1)
         x = tf.add(x, x2)
@@ -226,9 +228,9 @@ class Model():
 
         with tf.compat.v1.variable_scope('GEN', reuse=reuse):
             x = images
-            normalizer_fn = ly.instance_norm
-            regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
-            initializer = tf.contrib.layers.xavier_initializer()
+            normalizer_fn = tfa.layers.InstanceNormalization
+            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
+            initializer = tf.compat.v1.keras.initializers.glorot_normal()
             # stage 1
 
             x = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4), strides=(
@@ -287,8 +289,9 @@ class Model():
                 train, 3, [256, 256, 1024], stage=-4, block='c', is_relu=True)
             
 
-            train = ly.conv2d_transpose(train, 512, 4, stride=2,
-                                        activation_fn=None, normalizer_fn=normalizer_fn, padding='SAME', weights_initializer=initializer, weights_regularizer=regularizer, biases_initializer=None)
+            train = tf.keras.layers.Conv2DTranspose(512, 4, strides=(2,2),
+                                        activation=None, padding='SAME', kernel_initializer=initializer, kernel_regularizer=regularizer, bias_initializer=None)(train)
+            train = tfa.layers.InstanceNormalization()(train)
             sc, kp = tf.split(train, 2, axis=2)
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut3, sc], axis=3)
@@ -309,8 +312,9 @@ class Model():
             
             
 
-            train = ly.conv2d_transpose(train, 256, 4, stride=2,
-                                        activation_fn=None, normalizer_fn=normalizer_fn, padding='SAME', weights_initializer=initializer, weights_regularizer=regularizer, biases_initializer=None)
+            train = tf.keras.layers.Conv2DTranspose(256, 4, strides=(2,2),
+                                        activation=None, padding='SAME', kernel_initializer=initializer, kernel_regularizer=regularizer, bias_initializer=None)(train)
+            train = tfa.layers.InstanceNormalization()(train)
             sc, kp = tf.split(train, 2, axis=2)
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut2, sc], axis=3)
@@ -330,8 +334,9 @@ class Model():
             train = self.identity_block(
                 train, 3, [64, 64, 256], stage=-2, block='e', is_relu=True)
 
-            train = ly.conv2d_transpose(train, 128, 4, stride=2,
-                                        activation_fn=None, normalizer_fn=normalizer_fn, padding='SAME', weights_initializer=initializer, weights_regularizer=regularizer, biases_initializer=None)
+            train = tf.keras.layers.Conv2DTranspose(128, 4, strides=(2,2),
+                                        activation=None, padding='SAME', kernel_initializer=initializer, kernel_regularizer=regularizer, bias_initializer=None)(train)
+            train = tfa.layers.InstanceNormalization()(train)
             sc, kp = tf.split(train, 2, axis=2)
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut1, sc], axis=3)
@@ -343,8 +348,9 @@ class Model():
 
             # stage -1
 
-            train = ly.conv2d_transpose(train, 64, 4, stride=2,
-                                        activation_fn=None, normalizer_fn=normalizer_fn, padding='SAME', weights_initializer=initializer, weights_regularizer=regularizer, biases_initializer=None)
+            train = tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
+                                        activation=None, padding='SAME', kernel_initializer=initializer, kernel_regularizer=regularizer, bias_initializer=None)(train)
+            train = tfa.layers.InstanceNormalization()(train)
             sc, kp = tf.split(train, 2, axis=2)
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut0, sc], axis=3)
@@ -354,8 +360,8 @@ class Model():
                 [merge, kp], axis=2)
 
             # stage -0
-            recon = ly.conv2d_transpose(train, 3, 4, stride=2,
-                                        activation_fn=None, padding='SAME', weights_initializer=initializer, weights_regularizer=regularizer, biases_initializer=None)
+            recon = tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
+                                        activation=None, padding='SAME', kernel_initializer=initializer, kernel_regularizer=regularizer, bias_initializer=None)(train)
 
         return recon, tf.nn.tanh(recon)
 
@@ -370,22 +376,25 @@ class Model():
                     return f1 * x + f2 * abs(x)
 
             size = 128
-            normalizer_fn = ly.instance_norm
             activation_fn = lrelu
 
-            img = ly.conv2d(img, num_outputs=size / 2, kernel_size=4,
-                            stride=2, activation_fn=activation_fn)
-            img = ly.conv2d(img, num_outputs=size, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
-            img = ly.conv2d(img, num_outputs=size * 2, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
-            img = ly.conv2d(img, num_outputs=size * 4, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
-            img = ly.conv2d(img, num_outputs=size * 4, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
+            img = tf.keras.layers.Conv2D(filters=size / 2, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tf.keras.layers.Conv2D(filters=size, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.keras.layers.Conv2D(filters=size * 2, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.keras.layers.Conv2D(filters=size * 4, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.keras.layers.Conv2D(filters=size * 4, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
 
-            logit = ly.fully_connected(tf.reshape(
-                img, [bs, -1]), 1, activation_fn=None)
+            logit = tf.compat.v1.layers.dense(tf.reshape(
+                img, [bs, -1]), 1, activation=None)
 
         return logit
 
@@ -400,20 +409,22 @@ class Model():
                     return f1 * x + f2 * abs(x)
 
             size = 128
-            normalizer_fn = ly.instance_norm
             activation_fn = lrelu
 
-            img = ly.conv2d(img, num_outputs=size / 2, kernel_size=4,
-                            stride=2, activation_fn=activation_fn)
-            img = ly.conv2d(img, num_outputs=size, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
-            img = ly.conv2d(img, num_outputs=size * 2, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
-            img = ly.conv2d(img, num_outputs=size * 2, kernel_size=4,
-                            stride=2, activation_fn=activation_fn, normalizer_fn=normalizer_fn)
+            img = tf.keras.layers.Conv2D(filters=size / 2, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tf.keras.layers.Conv2D(filters=size, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.keras.layers.Conv2D(filters=size * 2, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.keras.layers.Conv2D(filters=size * 2, kernel_size=4,
+                            strides=(2,2), activation=activation_fn)(img)
+            img = tfa.layers.InstanceNormalization()(img)
 
-            logit = ly.fully_connected(tf.reshape(
-                img, [bs, -1]), 1, activation_fn=None)
+            logit = tf.compat.v1.layers.dense(tf.reshape(
+                img, [bs, -1]), 1, activation=None)
 
         return logit
 

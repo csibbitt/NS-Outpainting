@@ -117,7 +117,7 @@ with tf.compat.v1.Session(config=config) as sess:
             learning_rate=learning_rate, beta1=0.5, beta2=0.9)
 
 
-        trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
+        trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
         trainset = trainset.shuffle(args.trainset_length)
         trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
         trainset = trainset.batch(args.batch_size).repeat()
@@ -125,7 +125,7 @@ with tf.compat.v1.Session(config=config) as sess:
         train_iterator = trainset.make_one_shot_iterator()
         train_im = train_iterator.get_next()
 
-        testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
+        testset = tf.compat.v1.data.TFRecordDataset(filenames=[args.testset_path])
         testset = testset.map(parse_testset, num_parallel_calls=args.workers)
         testset = testset.batch(args.batch_size).repeat()
 
