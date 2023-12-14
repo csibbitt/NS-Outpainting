@@ -30,7 +30,7 @@ trainset = trainset[1000:]
 def build_trainset(image_list, name):
     len2 = len(image_list)
     print("len=", len2)
-    writer = tf.python_io.TFRecordWriter(name)
+    writer = tf.io.TFRecordWriter(name)
     k = 0
     for i in range(len2):
 
@@ -60,7 +60,7 @@ def build_trainset(image_list, name):
 def build_testset(image_list, name):
     len2 = len(image_list)
     print("len=", len2)
-    writer = tf.python_io.TFRecordWriter(name)
+    writer = tf.io.TFRecordWriter(name)
     for i in range(len2):
 
         image = Image.open(image_list[i])

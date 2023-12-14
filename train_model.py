@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 from tensorflow.python.training.moving_averages import assign_moving_average
-import tensorflow.contrib.layers as ly
 from modeling.model import Model
 from modeling.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
@@ -13,7 +12,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Model training.')
 # experiment
-parser.add_argument('--date', type=str, default='0817')
+parser.add_argument('--date', type=str, default='1214')
 parser.add_argument('--exp-index', type=int, default=2)
 parser.add_argument('--f', action='store_true', default=False)
 
@@ -101,19 +100,19 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 model = Model(args)
 loss = Loss(args)
 
-config = tf.ConfigProto(allow_soft_placement=True)
+config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
 config.gpu_options.allow_growth = True
-config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
+config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.OptimizerOptions.ON_1
 
 print("Start building model...")
-with tf.Session(config=config) as sess:
+with tf.compat.v1.Session(config=config) as sess:
     with tf.device('/cpu:0'):
-        learning_rate = tf.placeholder(tf.float32, [])
-        lambda_rec = tf.placeholder(tf.float32, [])
+        learning_rate = tf.compat.v1.placeholder(tf.float32, [])
+        lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
 
-        train_op_G = tf.train.AdamOptimizer(
+        train_op_G = tf.compat.v1.train.AdamOptimizer(
             learning_rate=learning_rate, beta1=0.5, beta2=0.9)
-        train_op_D = tf.train.AdamOptimizer(
+        train_op_D = tf.compat.v1.train.AdamOptimizer(
             learning_rate=learning_rate, beta1=0.5, beta2=0.9)
 
 
@@ -139,9 +138,9 @@ with tf.Session(config=config) as sess:
             with tf.device('/gpu:%d' % gpu_id):
                 print('tower_%d' % gpu_id)
                 with tf.name_scope('tower_%d' % gpu_id):
-                    with tf.variable_scope('cpu_variables', reuse=gpu_id > 0):
+                    with tf.compat.v1.variable_scope('cpu_variables', reuse=gpu_id > 0):
 
-                        groundtruth = tf.placeholder(
+                        groundtruth = tf.compat.v1.placeholder(
                             tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
@@ -152,14 +151,14 @@ with tf.Session(config=config) as sess:
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
                         loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(model, groundtruth, reconstruction)
 
-                        reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+                        reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
                         loss_D = loss_adv_D
 
                         var_G = list(filter(lambda x: x.name.startswith(
-                            'cpu_variables/GEN'), tf.trainable_variables()))
+                            'cpu_variables/GEN'), tf.compat.v1.trainable_variables()))
                         var_D = list(filter(lambda x: x.name.startswith(
-                            'cpu_variables/DIS'), tf.trainable_variables()))
+                            'cpu_variables/DIS'), tf.compat.v1.trainable_variables()))
 
 
                         grad_g = train_op_G.compute_gradients(
@@ -178,10 +177,10 @@ with tf.Session(config=config) as sess:
         groundtruths = params
         
         with tf.device('/gpu:0'):
-            aver_loss_g = tf.reduce_mean(loss_Gs)
-            aver_loss_d = tf.reduce_mean(loss_Ds)
-            aver_loss_ag = tf.reduce_mean(loss_adv_Gs)
-            aver_loss_rec = tf.reduce_mean(loss_recs)
+            aver_loss_g = tf.reduce_mean(input_tensor=loss_Gs)
+            aver_loss_d = tf.reduce_mean(input_tensor=loss_Ds)
+            aver_loss_ag = tf.reduce_mean(input_tensor=loss_adv_Gs)
+            aver_loss_rec = tf.reduce_mean(input_tensor=loss_recs)
 
             train_op_G = train_op_G.apply_gradients(
                 loss.average_gradients(grad_gs))
@@ -191,23 +190,23 @@ with tf.Session(config=config) as sess:
             groundtruths = tf.concat(groundtruths, axis=0)
             reconstructions = tf.concat(reconstructions, axis=0)
 
-            tf.summary.scalar('loss_g', aver_loss_g)
-            tf.summary.scalar('loss_d', aver_loss_d)
-            tf.summary.scalar('loss_ag', aver_loss_ag)
-            tf.summary.scalar('loss_rec', aver_loss_rec)
-            tf.summary.image('groundtruth', groundtruths, 2)
-            tf.summary.image('reconstruction', reconstructions, 2)
+            tf.compat.v1.summary.scalar('loss_g', aver_loss_g)
+            tf.compat.v1.summary.scalar('loss_d', aver_loss_d)
+            tf.compat.v1.summary.scalar('loss_ag', aver_loss_ag)
+            tf.compat.v1.summary.scalar('loss_rec', aver_loss_rec)
+            tf.compat.v1.summary.image('groundtruth', groundtruths, 2)
+            tf.compat.v1.summary.image('reconstruction', reconstructions, 2)
 
-            merged = tf.summary.merge_all()
+            merged = tf.compat.v1.summary.merge_all()
             writer = tf.summary.FileWriter(tensorboard_path, sess.graph)
 
         print('Done.')
 
 
         iters = 0
-        saver = tf.train.Saver(max_to_keep=5)
+        saver = tf.compat.v1.train.Saver(max_to_keep=5)
         if args.checkpoint_path is None:
-            sess.run(tf.global_variables_initializer())
+            sess.run(tf.compat.v1.global_variables_initializer())
         else:
             print('Start loading checkpoint...')
             saver.restore(sess, args.checkpoint_path)

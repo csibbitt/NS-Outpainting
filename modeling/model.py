@@ -7,10 +7,10 @@ class Model():
         self.cfg = cfg
 
     def new_atrous_conv_layer(self, bottom, filter_shape, rate, name=None):
-        with tf.variable_scope(name):
+        with tf.compat.v1.variable_scope(name):
             regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
             initializer = tf.contrib.layers.xavier_initializer()
-            W = tf.get_variable(
+            W = tf.compat.v1.get_variable(
                 "W",
                 shape=filter_shape,
                 regularizer=regularizer,
@@ -34,7 +34,7 @@ class Model():
         # defining name basis
         conv_name_base = 'res' + str(stage) + block + '_branch'
 
-        with tf.variable_scope("id_block_stage" + str(stage) + block):
+        with tf.compat.v1.variable_scope("id_block_stage" + str(stage) + block):
             filter1, filter2, filter3 = filters
             X_shortcut = X_input
             regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
@@ -76,7 +76,7 @@ class Model():
         # defining name basis
         conv_name_base = 'res' + str(stage) + block + '_branch'
 
-        with tf.variable_scope("conv_block_stage" + str(stage) + block):
+        with tf.compat.v1.variable_scope("conv_block_stage" + str(stage) + block):
 
             regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
             initializer = tf.contrib.layers.xavier_initializer()
@@ -144,19 +144,19 @@ class Model():
         x = ly.conv2d(x, size, 1, stride=1, activation_fn=None,
                       normalizer_fn=None, padding='SAME', weights_regularizer=regularizer, biases_initializer=None)
         x = self.in_lrelu(x)
-        x = tf.transpose(x, [0, 2, 1, 3])
+        x = tf.transpose(a=x, perm=[0, 2, 1, 3])
         x = tf.reshape(x, [-1, 4, 4 * size])
-        x = tf.transpose(x, [1, 0, 2])
+        x = tf.transpose(a=x, perm=[1, 0, 2])
         # encoder_inputs = x
         x = tf.reshape(x, [-1, 4 * size])
         x_split = tf.split(x, 4, 0)
 
         ys = []
-        with tf.variable_scope('LSTM'):
-            with tf.variable_scope('encoder'):
-                lstm_cell = tf.contrib.rnn.LSTMCell(
+        with tf.compat.v1.variable_scope('LSTM'):
+            with tf.compat.v1.variable_scope('encoder'):
+                lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
                     4 * size, activation=activation_fn)
-                lstm_cell = tf.contrib.rnn.MultiRNNCell(
+                lstm_cell = tf.compat.v1.nn.rnn_cell.MultiRNNCell( # WARNING:tensorflow:At least two cells provided to MultiRNNCell are the same object and will share weights.
                     [lstm_cell] * layer_num, state_is_tuple=True)
             
             init_state = lstm_cell.zero_state(self.cfg.batch_size_per_gpu, dtype=tf.float32)
@@ -165,10 +165,10 @@ class Model():
             now, _state = lstm_cell(x_split[2], _state)
             now, _state = lstm_cell(x_split[3], _state)
 
-            with tf.variable_scope('decoder'):
-                lstm_cell = tf.contrib.rnn.BasicLSTMCell(
+            with tf.compat.v1.variable_scope('decoder'):
+                lstm_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(
                     4 * size, activation=activation_fn)
-                lstm_cell2 = tf.contrib.rnn.MultiRNNCell(
+                lstm_cell2 = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
                     [lstm_cell] * layer_num, state_is_tuple=True)
             #predict
             now, _state = lstm_cell2(x_split[3], _state)
@@ -224,7 +224,7 @@ class Model():
 
     def build_reconstruction(self, images, reuse=None):
 
-        with tf.variable_scope('GEN', reuse=reuse):
+        with tf.compat.v1.variable_scope('GEN', reuse=reuse):
             x = images
             normalizer_fn = ly.instance_norm
             regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
@@ -361,10 +361,10 @@ class Model():
 
     def build_adversarial_global(self, img, reuse=None, name=None):
         bs = img.get_shape().as_list()[0]
-        with tf.variable_scope(name, reuse=reuse):
+        with tf.compat.v1.variable_scope(name, reuse=reuse):
 
             def lrelu(x, leak=0.2, name="lrelu"):
-                with tf.variable_scope(name):
+                with tf.compat.v1.variable_scope(name):
                     f1 = 0.5 * (1 + leak)
                     f2 = 0.5 * (1 - leak)
                     return f1 * x + f2 * abs(x)
@@ -391,10 +391,10 @@ class Model():
 
     def build_adversarial_local(self, img, reuse=None, name=None):
         bs = img.get_shape().as_list()[0]
-        with tf.variable_scope(name, reuse=reuse):
+        with tf.compat.v1.variable_scope(name, reuse=reuse):
 
             def lrelu(x, leak=0.2, name="lrelu"):
-                with tf.variable_scope(name):
+                with tf.compat.v1.variable_scope(name):
                     f1 = 0.5 * (1 + leak)
                     f2 = 0.5 * (1 - leak)
                     return f1 * x + f2 * abs(x)

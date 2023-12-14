@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 from tensorflow.python.training.moving_averages import assign_moving_average
-import tensorflow.contrib.layers as ly
 from modeling.model import Model
 from modeling.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
@@ -102,19 +101,19 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 model = Model(args)
 loss = Loss(args)
 
-config = tf.ConfigProto(allow_soft_placement=True)
+config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
 config.gpu_options.allow_growth = True
-config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
+config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.OptimizerOptions.ON_1
 
 print("Start building model...")
-with tf.Session(config=config) as sess:
+with tf.compat.v1.Session(config=config) as sess:
     with tf.device('/cpu:0'):
-        learning_rate = tf.placeholder(tf.float32, [])
-        lambda_rec = tf.placeholder(tf.float32, [])
+        learning_rate = tf.compat.v1.placeholder(tf.float32, [])
+        lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
 
-        train_op_G = tf.train.AdamOptimizer(
+        train_op_G = tf.compat.v1.train.AdamOptimizer(
             learning_rate=learning_rate, beta1=0.5, beta2=0.9)
-        train_op_D = tf.train.AdamOptimizer(
+        train_op_D = tf.compat.v1.train.AdamOptimizer(
             learning_rate=learning_rate, beta1=0.5, beta2=0.9)
 
 
@@ -140,9 +139,9 @@ with tf.Session(config=config) as sess:
             with tf.device('/gpu:%d' % gpu_id):
                 print('tower_%d' % gpu_id)
                 with tf.name_scope('tower_%d' % gpu_id):
-                    with tf.variable_scope('cpu_variables', reuse=gpu_id > 0):
+                    with tf.compat.v1.variable_scope('cpu_variables', reuse=gpu_id > 0):
 
-                        groundtruth = tf.placeholder(
+                        groundtruth = tf.compat.v1.placeholder(
                             tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
@@ -153,14 +152,14 @@ with tf.Session(config=config) as sess:
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
                         loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(model, groundtruth, reconstruction)
 
-                        reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+                        reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
                         loss_D = loss_adv_D
 
                         var_G = list(filter(lambda x: x.name.startswith(
-                            'cpu_variables/GEN'), tf.trainable_variables()))
+                            'cpu_variables/GEN'), tf.compat.v1.trainable_variables()))
                         var_D = list(filter(lambda x: x.name.startswith(
-                            'cpu_variables/DIS'), tf.trainable_variables()))
+                            'cpu_variables/DIS'), tf.compat.v1.trainable_variables()))
 
 
                         grad_g = train_op_G.compute_gradients(
@@ -187,9 +186,9 @@ with tf.Session(config=config) as sess:
 
 
         iters = 0
-        saver = tf.train.Saver(max_to_keep=5)
+        saver = tf.compat.v1.train.Saver(max_to_keep=5)
         if args.checkpoint_path is None:
-            sess.run(tf.global_variables_initializer())
+            sess.run(tf.compat.v1.global_variables_initializer())
         else:
             print('Start loading checkpoint...')
             saver.restore(sess, args.checkpoint_path)

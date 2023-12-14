@@ -17,26 +17,26 @@ class Loss():
         mask2 = tf.constant(mask_values, dtype=tf.float32, shape=[1, 128, 128, 1])
         mask = tf.concat([mask1, mask2], axis=2)
         loss_recon = loss_recon * mask
-        loss_recon = tf.reduce_mean(loss_recon)
+        loss_recon = tf.reduce_mean(input_tensor=loss_recon)
         return loss_recon
 
     def adversarial_loss(self, dis_fun, real, fake, name):
         adversarial_pos = dis_fun(real, name=name)
-        adversarial_neg = dis_fun(fake, reuse=tf.AUTO_REUSE, name=name)
+        adversarial_neg = dis_fun(fake, reuse=tf.compat.v1.AUTO_REUSE, name=name)
 
-        loss_adv_D = - tf.reduce_mean(adversarial_pos - adversarial_neg)
+        loss_adv_D = - tf.reduce_mean(input_tensor=adversarial_pos - adversarial_neg)
 
         differences = fake - real
-        alpha = tf.random_uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1])
+        alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1])
         interpolates = real + tf.multiply(alpha, differences)
         gradients = tf.gradients(dis_fun(
-            interpolates, reuse=tf.AUTO_REUSE, name=name), [interpolates])[0]
+            interpolates, reuse=tf.compat.v1.AUTO_REUSE, name=name), [interpolates])[0]
         slopes = tf.sqrt(tf.reduce_sum(
-            tf.square(gradients), [1, 2, 3]) + 1e-10)
-        gradients_penalty = tf.reduce_mean((slopes - 1.) ** 2)
+            input_tensor=tf.square(gradients), axis=[1, 2, 3]) + 1e-10)
+        gradients_penalty = tf.reduce_mean(input_tensor=(slopes - 1.) ** 2)
         loss_adv_D += self.cfg.lambda_gp * gradients_penalty
 
-        loss_adv_G = -tf.reduce_mean(adversarial_neg)
+        loss_adv_G = -tf.reduce_mean(input_tensor=adversarial_neg)
 
         return loss_adv_D, loss_adv_G
 
@@ -68,14 +68,14 @@ class Loss():
 
 
     def average_losses(self, loss):
-        tf.add_to_collection('losses', loss)
+        tf.compat.v1.add_to_collection('losses', loss)
 
         # Assemble all of the losses for the current tower only.
-        losses = tf.get_collection('losses')
+        losses = tf.compat.v1.get_collection('losses')
 
         # Calculate the total loss for the current tower.
-        regularization_losses = tf.get_collection(
-            tf.GraphKeys.REGULARIZATION_LOSSES)
+        regularization_losses = tf.compat.v1.get_collection(
+            tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
         total_loss = tf.add_n(
             losses + regularization_losses, name='total_loss')
 
@@ -101,7 +101,7 @@ class Loss():
                 expanded_g = tf.expand_dims(g, 0)
                 grads.append(expanded_g)
             grad = tf.concat(grads, axis=0)
-            grad = tf.reduce_mean(grad, 0)
+            grad = tf.reduce_mean(input_tensor=grad, axis=0)
 
             # Keep in mind that the Variables are redundant because they are shared
             # across towers. So .. we will just return the first tower's pointer to
@@ -113,7 +113,7 @@ class Loss():
         if self.cfg.clip_gradient:
             gradients, variables = zip(*average_grads)
             gradients = [
-                None if gradient is None else tf.clip_by_average_norm(gradient, self.cfg.clip_gradient_value)
+                None if gradient is None else tf.compat.v1.clip_by_average_norm(gradient, self.cfg.clip_gradient_value)
                 for gradient in gradients]
             average_grads = zip(gradients, variables)
         return average_grads
