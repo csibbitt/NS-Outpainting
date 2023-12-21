@@ -14,5 +14,5 @@ python train_model.py\
   --trainset-path ./tf_dataset_new/trainset.tfr \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
-  --checkpoint-path "./drive/MyDrive/v2_NS-Outpainting/logs/1215/2/models/-${CHECKPOINT}" \
+  --checkpoint-path "./logs/1215/2/models/-${CHECKPOINT}" \
   --resume-step "${CHECKPOINT}"
