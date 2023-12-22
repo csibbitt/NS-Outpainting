@@ -19,7 +19,7 @@ parser.add_argument('--f', action='store_true', default=False)
 
 # gpu
 parser.add_argument('--start-gpu', type=int, default=0)
-parser.add_argument('--num-gpu', type=int, default=2)
+parser.add_argument('--num-gpu', type=int, default=1)
 
 # dataset
 parser.add_argument('--trainset-path', type=str, default='./dataset/trainset.tfr')
