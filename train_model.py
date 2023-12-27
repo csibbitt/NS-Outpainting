@@ -229,7 +229,7 @@ with tf.compat.v1.Session(config=config) as sess:
 
 
         iters = 0
-        saver = tf.compat.v1.train.Saver(max_to_keep=5)
+        saver = tf.compat.v1.train.Saver(max_to_keep=3)
         if args.checkpoint_path is None:
             sess.run(tf.compat.v1.global_variables_initializer())
         else:
