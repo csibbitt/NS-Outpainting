@@ -3,3 +3,6 @@ __pycache__
 dataset/*.tfr
 logs/
 .ipynb_checkpoints/
+content
+tf_dataset_new
+setup.sh

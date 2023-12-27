@@ -10,6 +10,27 @@ from modeling.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
 import argparse
 
+import time
+
+class Timer():
+    def __init__(self, label):
+        self.label = label
+        self.start = time.perf_counter()
+        self.lapstart = self.start
+
+    def stop(self):
+        print('{} taking : {}s'.format(self.label, int(time.perf_counter() - self.start)))
+
+    def lap(self):
+        now = time.perf_counter()
+        print('{} lap taking : {}s'.format(self.label, int(now - self.lapstart)))
+        self.lapstart = now
+
+    def reset(self):
+        self.start = time.perf_counter()
+        self.lap = self.start
+
+
 
 parser = argparse.ArgumentParser(description='Model training.')
 # experiment
@@ -108,6 +129,8 @@ config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.Optimizer
 print("Start building model...")
 with tf.compat.v1.Session(config=config) as sess:
     with tf.device('/cpu:0'):
+
+        btimer = Timer('building')
         learning_rate = tf.compat.v1.placeholder(tf.float32, [])
         lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
 
@@ -171,12 +194,13 @@ with tf.compat.v1.Session(config=config) as sess:
                         params.append(groundtruth)
 
         print('Done.')
+        btimer.stop()
 
-        print('Start reducing towers on cpu...')
+        print('Start reducing towers on gpu...')
 
         grad_gs, grad_ds, loss_Gs, loss_Ds, loss_adv_Gs, loss_recs, reconstructions = zip(*models)
         groundtruths = params
-        
+
         with tf.device('/gpu:0'):
             aver_loss_g = tf.reduce_mean(input_tensor=loss_Gs)
             aver_loss_d = tf.reduce_mean(input_tensor=loss_Ds)
@@ -214,18 +238,18 @@ with tf.compat.v1.Session(config=config) as sess:
             iters = args.resume_step
             print('Done.')
 
-        
 
 
         print('Start training...')
-        
+
         for epoch in range(args.epoch):
-            
+            etimer = Timer(f'epoch {epoch}')
             if epoch > args.lr_decay_epoch:
                 learning_rate_val = args.base_lr / 10
             else:
                 learning_rate_val = args.base_lr
-                       
+
+            itimer = Timer('iter')
             for start, end in zip(
                     range(0, args.trainset_length, args.batch_size),
                     range(args.batch_size, args.trainset_length, args.batch_size)):
@@ -283,10 +307,10 @@ with tf.compat.v1.Session(config=config) as sess:
                         feed_dict=inp_dict)
                 if iters % 20 == 0:
                     print("Iter:", iters, 'loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
-
+                    itimer.lap()
                 iters += 1
-
             saver.save(sess, model_path, global_step=iters)
+
 
             # testing
             if epoch > 0:
@@ -314,7 +338,7 @@ with tf.compat.v1.Session(config=config) as sess:
                     ag_vals += ag_val
                     n_batchs += 1
 
-                    # Save test result every 100 epochs
+                    # Save test results
                     if epoch % 100 == 0:
 
                         for rec_val, test_ori in zip(reconstruction_vals, test_oris):
@@ -332,7 +356,7 @@ with tf.compat.v1.Session(config=config) as sess:
                 d_vals /= n_batchs
                 ag_vals /= n_batchs
 
-                summary = tf.Summary()
+                summary = tf.compat.v1.Summary()
                 summary.value.add(tag='eval/g',
                                   simple_value=g_vals)
                 summary.value.add(tag='eval/d',
@@ -347,3 +371,4 @@ with tf.compat.v1.Session(config=config) as sess:
 
                 if np.isnan(reconstruction_vals.min()) or np.isnan(reconstruction_vals.max()):
                     print("NaN detected!!")
+            etimer.stop()
