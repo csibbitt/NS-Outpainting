@@ -17,4 +17,6 @@ python train_model.py \
   --trainset-path ./tf_dataset_new/trainset.tfr \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
+  --num-gpu 1 \
+  --batch-size 32 \
   ${CKPT_OPTS}
