@@ -2,52 +2,16 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 
 from modeling.grb import Grb
+from modeling.identity import IdentityBlock
+
+import modeling.relu as mr
 
 class Model():
     def __init__(self, cfg):
         self.cfg = cfg
         self.grb = Grb(cfg.weight_decay)
+        self.identity_block = IdentityBlock(cfg.weight_decay)
 
-    def identity_block(self, X_input, kernel_size, filters, stage, block, is_relu=False):
-        if is_relu:
-            activation_fn=tf.nn.relu
-        else:
-            activation_fn=self.leaky_relu
-
-        normalizer_fn = tfa.layers.InstanceNormalization
-
-
-        # defining name basis
-        conv_name_base = 'res' + str(stage) + block + '_branch'
-
-        with tf.compat.v1.variable_scope("id_block_stage" + str(stage) + block):
-            filter1, filter2, filter3 = filters
-            X_shortcut = X_input
-            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
-            initializer = tf.compat.v1.keras.initializers.glorot_normal()
-
-            # First component of main path
-            x = tf.keras.layers.Conv2D(filter1,
-                                 kernel_size=(1, 1), strides=(1, 1), name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_input)
-            x = normalizer_fn()(x)
-            x = activation_fn(x)
-
-            # Second component of main path
-            x = tf.keras.layers.Conv2D(filter2, (kernel_size, kernel_size),
-                                 padding='same', name=conv_name_base + '2b', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn()(x)
-            x = activation_fn(x)
-
-            # Third component of main path
-            x = tf.keras.layers.Conv2D(filter3, kernel_size=(
-                1, 1), name=conv_name_base + '2c', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn()(x)
-
-            # Final step: Add shortcut value to main path, and pass it through
-            x = tf.add(x, X_shortcut)
-            x = activation_fn(x)
-
-        return x
 
     def convolutional_block(self, X_input, kernel_size, filters, stage, block, stride=2, is_relu=False):
         
@@ -55,7 +19,7 @@ class Model():
             activation_fn=tf.nn.relu
             
         else:
-            activation_fn=self.leaky_relu
+            activation_fn=mr.leaky_relu
 
         normalizer_fn = tfa.layers.InstanceNormalization
 
@@ -106,21 +70,6 @@ class Model():
 
         return x
 
-    def leaky_relu(self, x, name=None, leak=0.2):
-        f1 = 0.5 * (1 + leak)
-        f2 = 0.5 * (1 - leak)
-        return f1 * x + f2 * abs(x)
-
-    def in_lrelu(self, x, name=None):
-        x = tfa.layers.InstanceNormalization()(x)
-        x = self.leaky_relu(x)
-        return x
-
-    def in_relu(self, x, name=None):
-        x = tfa.layers.InstanceNormalization()(x)
-        x = tf.nn.relu(x)
-        return x
-
     def rct(self, x):
         regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
         output_size = x.get_shape().as_list()[3]
@@ -129,7 +78,7 @@ class Model():
         activation_fn = tf.tanh
         x = tf.keras.layers.Conv2D(size, 1, strides=(1,1), activation=None,
                        padding='SAME', kernel_regularizer=regularizer, bias_initializer=None)(x)
-        x = self.in_lrelu(x)
+        x = mr.in_lrelu(x)
         x = tf.transpose(a=x, perm=[0, 2, 1, 3])
         x = tf.reshape(x, [-1, 4, 4 * size])
         x = tf.transpose(a=x, perm=[1, 0, 2])
@@ -171,7 +120,7 @@ class Model():
 
         y = tf.keras.layers.Conv2D(output_size, 1, strides=(1,1), activation=None,
                        padding='SAME', kernel_regularizer=regularizer, bias_initializer=None)(y)
-        y = self.in_lrelu(y)
+        y = mr.in_lrelu(y)
         return y
 
 
@@ -203,11 +152,11 @@ class Model():
 
             x = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4), strides=(
                 2, 2), name='conv0', kernel_regularizer=regularizer, padding='same', kernel_initializer=initializer, use_bias=False)(x)
-            x = self.in_lrelu(x)
+            x = mr.in_lrelu(x)
             short_cut0 = x
             x = tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4), strides=(
                 2, 2), name='conv1', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = self.in_lrelu(x)
+            x = mr.in_lrelu(x)
             short_cut1 = x
 
             # stage 2
@@ -264,7 +213,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut3, sc], axis=3)
             merge = self.shc(merge, short_cut3, 512)
-            merge = self.in_relu(merge)
+            merge = mr.in_relu(merge)
             train = tf.concat(
                 [merge, kp], axis=2)
 
@@ -287,7 +236,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut2, sc], axis=3)
             merge = self.shc(merge, short_cut2, 256)
-            merge = self.in_relu(merge)
+            merge = mr.in_relu(merge)
             train = tf.concat(
                 [merge, kp], axis=2)
 
@@ -309,7 +258,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut1, sc], axis=3)
             merge = self.shc(merge, short_cut1, 128)
-            merge = self.in_relu(merge)
+            merge = mr.in_relu(merge)
             train = tf.concat(
                 [merge, kp], axis=2)
  
@@ -323,7 +272,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut0, sc], axis=3)
             merge = self.shc(merge, short_cut0, 64)
-            merge = self.in_relu(merge)
+            merge = mr.in_relu(merge)
             train = tf.concat(
                 [merge, kp], axis=2)
 
