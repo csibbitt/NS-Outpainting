@@ -3,6 +3,8 @@ import tensorflow_addons as tfa
 
 from modeling.grb import Grb
 from modeling.identity import IdentityBlock
+from modeling.convolution import ConvolutionalBlock
+
 
 import modeling.relu as mr
 
@@ -11,64 +13,7 @@ class Model():
         self.cfg = cfg
         self.grb = Grb(cfg.weight_decay)
         self.identity_block = IdentityBlock(cfg.weight_decay)
-
-
-    def convolutional_block(self, X_input, kernel_size, filters, stage, block, stride=2, is_relu=False):
-        
-        if is_relu:
-            activation_fn=tf.nn.relu
-            
-        else:
-            activation_fn=mr.leaky_relu
-
-        normalizer_fn = tfa.layers.InstanceNormalization
-
-        # defining name basis
-        conv_name_base = 'res' + str(stage) + block + '_branch'
-
-        with tf.compat.v1.variable_scope("conv_block_stage" + str(stage) + block):
-
-            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
-            initializer = tf.compat.v1.keras.initializers.glorot_normal()
-            # initializer = tf.variance_scaling_initializer(scale=1.0,mode='fan_in')
-
-            # Retrieve Filters
-            filter1, filter2, filter3 = filters
-
-            # Save the input value
-            X_shortcut = X_input
-
-            # First component of main path
-            x = tf.keras.layers.Conv2D(filter1,
-                                 kernel_size=(1, 1),
-                                 strides=(1, 1),
-                                 name=conv_name_base + '2a', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_input)
-            x = normalizer_fn()(x)
-            x = activation_fn(x)
-
-            # Second component of main path
-            x = tf.keras.layers.Conv2D(filter2, (kernel_size, kernel_size), strides=(stride, stride), name=conv_name_base +
-                                 '2b', padding='same', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn()(x)
-            x = activation_fn(x)
-
-            # Third component of main path
-            x = tf.keras.layers.Conv2D(filter3, (1, 1), name=conv_name_base + '2c',
-                                 kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(x)
-            x = normalizer_fn()(x)
-
-
-            # SHORTCUT PATH
-            X_shortcut = tf.keras.layers.Conv2D(filter3, (1, 1),
-                                          strides=(stride, stride), name=conv_name_base + '1', kernel_regularizer=regularizer, kernel_initializer=initializer, use_bias=False)(X_shortcut)
-            X_shortcut = normalizer_fn()(X_shortcut)
-
-            # Final step: Add shortcut value to main path, and pass it through
-            # a RELU activation
-            x = tf.add(X_shortcut, x)
-            x = activation_fn(x)
-
-        return x
+        self.convolutional_block = ConvolutionalBlock(cfg.weight_decay)
 
     def rct(self, x):
         regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
