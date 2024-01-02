@@ -6,3 +6,4 @@ logs/
 content
 tf_dataset_new
 setup.sh
+.vscode/
