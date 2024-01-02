@@ -24,7 +24,7 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
                                  name=self.conv_name_base + '2a',
-                                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("conv_regularizer2a", self.build_regularizer),
+                                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "conv_regularizer2a", self.build_regularizer),
                                  kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
@@ -32,21 +32,21 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
     return tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size), strides=(self.stride, self.stride), 
                                 name=self.conv_name_base +'2b',
-                                padding='same', kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("conv_regularizer2b", self.build_regularizer),
+                                padding='same', kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2b", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def build_conv3(self):
     return tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 name=self.conv_name_base + '2c',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("conv_regularizer2c", self.build_regularizer),
+                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2c", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
   def build_conv_short(self):
     return tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 strides=(self.stride, self.stride),
                                 name=self.conv_name_base + '1',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("conv_regularizer1", self.build_regularizer),
+                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer1", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
@@ -69,22 +69,22 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
       X_shortcut = X_input
 
       # First component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer("conv_conv2a", self.build_conv1)(X_input)
-      x = tf.compat.v1.keras.utils.get_or_create_layer("conv_nomalizer2a", self.build_normalizer)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv2a", self.build_conv1)(X_input)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer2a", self.build_normalizer)(x)
       x = activation_fn(x)
 
       # Second component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer("conv_conv2b", self.build_conv2)(x)
-      x = tf.compat.v1.keras.utils.get_or_create_layer("conv_nomalizer2b", self.build_normalizer)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv2b", self.build_conv2)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer2b", self.build_normalizer)(x)
       x = activation_fn(x)
 
       # Third component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer("conv_conv2c", self.build_conv3)(x)
-      x = tf.compat.v1.keras.utils.get_or_create_layer("conv_nomalizer2c", self.build_normalizer)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv2c", self.build_conv3)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer2c", self.build_normalizer)(x)
 
       # SHORTCUT PATH
-      X_shortcut = tf.compat.v1.keras.utils.get_or_create_layer("conv_conv1", self.build_conv_short)(X_shortcut)
-      X_shortcut = tf.compat.v1.keras.utils.get_or_create_layer("conv_nomalizer1", self.build_normalizer)(X_shortcut)
+      X_shortcut = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv1", self.build_conv_short)(X_shortcut)
+      X_shortcut = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer1", self.build_normalizer)(X_shortcut)
 
       # Final step: Add shortcut value to main path, and pass it through
       x = tf.add(x, X_shortcut)

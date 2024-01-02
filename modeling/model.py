@@ -5,6 +5,7 @@ from modeling.grb import Grb
 from modeling.identity import IdentityBlock
 from modeling.convolution import ConvolutionalBlock
 from modeling.rct import Rct
+from modeling.shc import Shc
 
 
 import modeling.relu as mr
@@ -16,19 +17,9 @@ class Model():
         self.identity_block = IdentityBlock(cfg.weight_decay)
         self.convolutional_block = ConvolutionalBlock(cfg.weight_decay)
         self.rct = Rct(cfg.weight_decay, self.cfg.batch_size_per_gpu)
+        self.shc = Shc(cfg.weight_decay)
 
-    def shc(self, x, shortcut, channels):
-        regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
-        x = tf.keras.layers.Conv2D(channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
-                      padding='SAME', kernel_regularizer=regularizer)(x)
-        x = tfa.layers.InstanceNormalization()(x)
-        x = tf.keras.layers.Conv2D(channels / 2, 3, strides=(1,1), activation=tf.nn.relu,
-                      padding='SAME', kernel_regularizer=regularizer)(x)
-        x = tfa.layers.InstanceNormalization()(x)
-        x = tf.keras.layers.Conv2D(channels, 1, strides=(1,1), activation=None,
-                      padding='SAME', kernel_regularizer=regularizer)(x)
-        x = tfa.layers.InstanceNormalization()(x)
-        return tf.add(shortcut, x)
+
 
 
 
@@ -153,7 +144,6 @@ class Model():
             merge = mr.in_relu(merge)
             train = tf.concat(
                 [merge, kp], axis=2)
- 
 
             # stage -1
 

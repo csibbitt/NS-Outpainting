@@ -23,7 +23,7 @@ class IdentityBlock(tf.keras.layers.Layer):
     return tf.keras.layers.Conv2D(self.filter1,
                                 kernel_size=(1, 1), strides=(1, 1),
                                 name=self.conv_name_base + '2a',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("id_regularizer1", self.build_regularizer),
+                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_regularizer1", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
@@ -31,14 +31,14 @@ class IdentityBlock(tf.keras.layers.Layer):
     return tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size),
                                 padding='same', name=self.conv_name_base + '2b',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("id_regularizer2", self.build_regularizer),
+                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_regularizer2", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def build_conv3(self):
     return tf.keras.layers.Conv2D(self.filter3,
                                 kernel_size=(1, 1), name=self.conv_name_base + '2c',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("id_regularizer3", self.build_regularizer),
+                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_regularizer3", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
@@ -61,21 +61,21 @@ class IdentityBlock(tf.keras.layers.Layer):
 
 
       # First component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer("id_conv1", self.build_conv1)(X_input)
-      x = tf.compat.v1.keras.utils.get_or_create_layer("id_nomalizer1", self.build_normalizer)(x)
-      x = activation_fn(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv1", self.build_conv1)(X_input)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer1", self.build_normalizer)(x)
+      x = activation_fn(x, self.conv_name_base + "_id_act1")
 
       # Second component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer("id_conv2", self.build_conv2)(x)
-      x = tf.compat.v1.keras.utils.get_or_create_layer("id_nomalizer2", self.build_normalizer)(x)
-      x = activation_fn(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv2", self.build_conv2)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer2", self.build_normalizer)(x)
+      x = activation_fn(x, self.conv_name_base + "_id_act2")
 
       # Third component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer("id_conv3", self.build_conv3)(x)
-      x = tf.compat.v1.keras.utils.get_or_create_layer("id_nomalizer3", self.build_normalizer)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv3", self.build_conv3)(x)
+      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer3", self.build_normalizer)(x)
 
       # Final step: Add shortcut value to main path, and pass it through
       x = tf.add(x, X_shortcut)
-      x = activation_fn(x)
+      x = activation_fn(x, self.conv_name_base + "_id_act3")
 
     return x
