@@ -4,6 +4,7 @@ import tensorflow_addons as tfa
 from modeling.grb import Grb
 from modeling.identity import IdentityBlock
 from modeling.convolution import ConvolutionalBlock
+from modeling.rct import Rct
 
 
 import modeling.relu as mr
@@ -14,61 +15,7 @@ class Model():
         self.grb = Grb(cfg.weight_decay)
         self.identity_block = IdentityBlock(cfg.weight_decay)
         self.convolutional_block = ConvolutionalBlock(cfg.weight_decay)
-
-    def rct(self, x):
-        regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
-        output_size = x.get_shape().as_list()[3]
-        size = 512
-        layer_num = 2
-        activation_fn = tf.tanh
-        x = tf.keras.layers.Conv2D(size, 1, strides=(1,1), activation=None,
-                       padding='SAME', kernel_regularizer=regularizer, bias_initializer=None)(x)
-        x = mr.in_lrelu(x)
-        x = tf.transpose(a=x, perm=[0, 2, 1, 3])
-        x = tf.reshape(x, [-1, 4, 4 * size])
-        x = tf.transpose(a=x, perm=[1, 0, 2])
-        # encoder_inputs = x
-        x = tf.reshape(x, [-1, 4 * size])
-        x_split = tf.split(x, 4, 0)
-
-        ys = []
-        with tf.compat.v1.variable_scope('LSTM'):
-            with tf.compat.v1.variable_scope('encoder'):
-                lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
-                    4 * size, activation=activation_fn)
-                lstm_cell = tf.compat.v1.nn.rnn_cell.MultiRNNCell( # WARNING:tensorflow:At least two cells provided to MultiRNNCell are the same object and will share weights.
-                    [lstm_cell] * layer_num, state_is_tuple=True)
-            
-            init_state = lstm_cell.zero_state(self.cfg.batch_size_per_gpu, dtype=tf.float32)
-            now, _state = lstm_cell(x_split[0], init_state)
-            now, _state = lstm_cell(x_split[1], _state)
-            now, _state = lstm_cell(x_split[2], _state)
-            now, _state = lstm_cell(x_split[3], _state)
-
-            with tf.compat.v1.variable_scope('decoder'):
-                lstm_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(
-                    4 * size, activation=activation_fn)
-                lstm_cell2 = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
-                    [lstm_cell] * layer_num, state_is_tuple=True)
-            #predict
-            now, _state = lstm_cell2(x_split[3], _state)
-            ys.append(tf.reshape(now, [-1, 4, 1, size]))
-            now, _state = lstm_cell2(now, _state)
-            ys.append(tf.reshape(now, [-1, 4, 1, size]))
-            now, _state = lstm_cell2(now, _state)
-            ys.append(tf.reshape(now, [-1, 4, 1, size]))
-            now, _state = lstm_cell2(now, _state)
-            ys.append(tf.reshape(now, [-1, 4, 1, size]))
-        
-
-        y = tf.concat(ys, axis=2)
-
-        y = tf.keras.layers.Conv2D(output_size, 1, strides=(1,1), activation=None,
-                       padding='SAME', kernel_regularizer=regularizer, bias_initializer=None)(y)
-        y = mr.in_lrelu(y)
-        return y
-
-
+        self.rct = Rct(cfg.weight_decay, self.cfg.batch_size_per_gpu)
 
     def shc(self, x, shortcut, channels):
         regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)

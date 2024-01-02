@@ -23,7 +23,7 @@ class Grb(tf.keras.layers.Layer):
           W = tf.compat.v1.get_variable(
               "W",
               shape=filter_shape,
-              regularizer=tf.compat.v1.keras.utils.get_or_create_layer("regularizer", self.build_regularizer),
+              regularizer=tf.compat.v1.keras.utils.get_or_create_layer("grb_regularizer", self.build_regularizer),
               initializer=initializer)
 
           x = tf.nn.atrous_conv2d(
@@ -33,16 +33,16 @@ class Grb(tf.keras.layers.Layer):
   def call(self, x, filters, rate, name):
     shortcut = x
     x1 = self.new_atrous_conv_layer(x, [3, 1, filters, filters], rate, name+'_a1')
-    x1 = tf.compat.v1.keras.utils.get_or_create_layer("nomalizer1", self.build_normalizer)(x1)
+    x1 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer1", self.build_normalizer)(x1)
     x1 = self.activation_fn(x1)
     x1 = self.new_atrous_conv_layer(x1, [1, 7, filters, filters], rate, name+'_a2')
-    x1 = tf.compat.v1.keras.utils.get_or_create_layer("nomalizer2", self.build_normalizer)(x1)
+    x1 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer2", self.build_normalizer)(x1)
 
     x2 = self.new_atrous_conv_layer(x, [1, 7, filters, filters], rate, name+'_b1')
-    x2 = tf.compat.v1.keras.utils.get_or_create_layer("nomalizer3", self.build_normalizer)(x2)
+    x2 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer3", self.build_normalizer)(x2)
     x2 = self.activation_fn(x2)
     x2 = self.new_atrous_conv_layer(x2, [3, 1, filters, filters], rate, name+'_b2')
-    x2 = tf.compat.v1.keras.utils.get_or_create_layer("nomalizer4", self.build_normalizer)(x2)
+    x2 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer4", self.build_normalizer)(x2)
 
     x = tf.add(shortcut, x1)
     x = tf.add(x, x2)
