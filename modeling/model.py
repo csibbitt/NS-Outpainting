@@ -1,29 +1,16 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+from modeling.grb import Grb
+
 class Model():
     def __init__(self, cfg):
         self.cfg = cfg
-
-    def new_atrous_conv_layer(self, bottom, filter_shape, rate, name=None):
-        with tf.compat.v1.variable_scope(name):
-            regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
-            initializer = tf.compat.v1.keras.initializers.glorot_normal()
-            W = tf.compat.v1.get_variable(
-                "W",
-                shape=filter_shape,
-                regularizer=regularizer,
-                initializer=initializer)
-
-            x = tf.nn.atrous_conv2d(
-                bottom, W, rate, padding='SAME')
-        return x
+        self.grb = Grb(cfg.weight_decay)
 
     def identity_block(self, X_input, kernel_size, filters, stage, block, is_relu=False):
-
         if is_relu:
             activation_fn=tf.nn.relu
-            
         else:
             activation_fn=self.leaky_relu
 
@@ -188,7 +175,7 @@ class Model():
         return y
 
 
-    
+
     def shc(self, x, shortcut, channels):
         regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
         x = tf.keras.layers.Conv2D(channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
@@ -203,26 +190,7 @@ class Model():
         return tf.add(shortcut, x)
 
 
-    def grb(self, x, filters, rate, name):
-        activation_fn = tf.nn.relu
-        normalizer_fn = tfa.layers.InstanceNormalization
-        shortcut = x
-        x1 = self.new_atrous_conv_layer(x, [3, 1, filters, filters], rate, name+'_a1')
-        x1 = normalizer_fn()(x1)
-        x1 = activation_fn(x1)
-        x1 = self.new_atrous_conv_layer(x1, [1, 7, filters, filters], rate, name+'_a2')
-        x1 = normalizer_fn()(x1)
 
-        x2 = self.new_atrous_conv_layer(x, [1, 7, filters, filters], rate, name+'_b1')
-        x2 = normalizer_fn()(x2)
-        x2 = activation_fn(x2)
-        x2 = self.new_atrous_conv_layer(x2, [3, 1, filters, filters], rate, name+'_b2')
-        x2 = normalizer_fn()(x2)
-
-        x = tf.add(shortcut, x1)
-        x = tf.add(x, x2)
-        x = activation_fn(x)
-        return x
 
     def build_reconstruction(self, images, reuse=None):
 

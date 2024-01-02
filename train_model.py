@@ -345,7 +345,7 @@ with tf.compat.v1.Session(config=config) as sess:
                             rec_hid = (255. * (rec_val + 1) /
                                        2.).astype(np.uint8)
                             test_ori = (255. * (test_ori + 1) /
-                                        2.).astype(np.uint8)
+                                       2.).astype(npq.uint8)
                             Image.fromarray(rec_hid).save(os.path.join(
                                 result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.jpg'))
                             if epoch == 0:
