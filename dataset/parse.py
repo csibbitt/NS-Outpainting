@@ -12,8 +12,8 @@ def parse_trainset(example_proto):
 
     image = tf.reshape(image, shape=[72 * 2, 216 * 2, 3])
 
-    image = tf.image.random_crop(image, [64 * 2, 128 * 2, 3])
-    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_crop(image, [64 * 2, 128 * 2, 3], seed=1)
+    image = tf.image.random_flip_left_right(image, seed=1)
     image = tf.cast(image, tf.float32) / 255.
     image = 2. * image - 1.
 

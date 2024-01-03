@@ -119,6 +119,7 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 
 
+
 model = Model(args)
 loss = Loss(args)
 
@@ -128,6 +129,12 @@ config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.Optimizer
 
 print("Start building model...")
 with tf.compat.v1.Session(config=config) as sess:
+
+    tf.compat.v1.random.set_random_seed(1)
+    tf.keras.utils.set_random_seed(1)
+    tf.config.experimental.enable_op_determinism()
+    tf.random.set_seed(1)
+
     with tf.device('/cpu:0'):
 
         btimer = Timer('building')
@@ -238,7 +245,10 @@ with tf.compat.v1.Session(config=config) as sess:
             iters = args.resume_step
             print('Done.')
 
+        import tf_slim as slim
 
+        model_vars = tf.compat.v1.trainable_variables()
+        slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
         print('Start training...')
 
