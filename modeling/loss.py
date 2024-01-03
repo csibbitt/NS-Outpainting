@@ -66,7 +66,6 @@ class Loss():
         return loss_adv_G, loss_adv_D
 
 
-
     def average_losses(self, loss):
         tf.compat.v1.add_to_collection('losses', loss)
 

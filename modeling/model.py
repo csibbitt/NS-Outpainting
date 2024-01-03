@@ -10,8 +10,9 @@ from modeling.shc import Shc
 
 import modeling.relu as mr
 
-class Model():
+class Model(tf.keras.Model):
     def __init__(self, cfg):
+        super().__init__()
         self.cfg = cfg
         self.grb = Grb(cfg.weight_decay)
         self.identity_block = IdentityBlock(cfg.weight_decay)
@@ -68,10 +69,10 @@ class Model():
                 bias_initializer=None)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
-    def build_reconstruction(self, images, reuse=None):
+    def call(self, images, reuse=None):
         with tf.compat.v1.variable_scope('GEN', reuse=reuse):
             x = images
-            self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
+            self.initializer = tf.compat.v1.keras.initializers.glorot_normal(seed=1)
             # stage 1
 
             x = tf.compat.v1.keras.utils.get_or_create_layer("main_conv0", self.build_conv0)(x)
@@ -134,7 +135,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut3, sc], axis=3)
             merge = self.shc(merge, short_cut3, 512)
-            merge = mr.in_relu(merge)
+            merge = mr.in_relu(merge, "main_actT4_merge")
             train = tf.concat(
                 [merge, kp], axis=2)
 
@@ -156,7 +157,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut2, sc], axis=3)
             merge = self.shc(merge, short_cut2, 256)
-            merge = mr.in_relu(merge)
+            merge = mr.in_relu(merge, "main_actT3_merge")
             train = tf.concat(
                 [merge, kp], axis=2)
 
@@ -177,7 +178,7 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut1, sc], axis=3)
             merge = self.shc(merge, short_cut1, 128)
-            merge = mr.in_relu(merge)
+            merge = mr.in_relu(merge, "main_actT2_merge")
             train = tf.concat(
                 [merge, kp], axis=2)
 
@@ -189,17 +190,38 @@ class Model():
             sc = tf.nn.relu(sc)
             merge = tf.concat([short_cut0, sc], axis=3)
             merge = self.shc(merge, short_cut0, 64)
-            merge = mr.in_relu(merge)
+            merge = mr.in_relu(merge, "main_actT1_merge")
             train = tf.concat(
                 [merge, kp], axis=2)
 
             # stage -0
             recon = tf.compat.v1.keras.utils.get_or_create_layer("main_convT0", self.build_convT0)(train)
 
-
         return recon, tf.nn.tanh(recon)
 
-    def build_adversarial_global(self, img, reuse=None, name=None):
+
+    def build_adversarial_conv1(self):
+        return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4,
+                            strides=(2,2), activation=self.activation_fn)
+
+    def build_adversarial_conv2(self):
+        return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4,
+                            strides=(2,2), activation=self.activation_fn)
+    
+    def build_adversarial_conv3(self):
+        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
+                            strides=(2,2), activation=self.activation_fn)
+    
+    def build_adversarial_conv4(self):
+        return tf.keras.layers.Conv2D(filters=self.size / 4, kernel_size=4,
+                            strides=(2,2), activation=self.activation_fn)
+    
+    def build_adversarial_conv5(self):
+        return tf.keras.layers.Conv2D(filters=self.size / 4, kernel_size=4,
+                            strides=(2,2), activation=self.activation_fn)
+
+    @tf.compat.v1.keras.utils.track_tf1_style_variables
+    def build_adversarial(self, img, reuse=None, name=None):
         bs = img.get_shape().as_list()[0]
         with tf.compat.v1.variable_scope(name, reuse=reuse):
 
@@ -209,57 +231,66 @@ class Model():
                     f2 = 0.5 * (1 - leak)
                     return f1 * x + f2 * abs(x)
 
-            size = 128
-            activation_fn = lrelu
+            self.size = 128
+            self.activation_fn = lrelu
 
-            img = tf.keras.layers.Conv2D(filters=size / 2, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tf.keras.layers.Conv2D(filters=size, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
-            img = tf.keras.layers.Conv2D(filters=size * 2, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
-            img = tf.keras.layers.Conv2D(filters=size * 4, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
-            img = tf.keras.layers.Conv2D(filters=size * 4, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_conv1_" + name, self.build_adversarial_conv1)(img)
 
-            logit = tf.compat.v1.layers.dense(tf.reshape(
-                img, [bs, -1]), 1, activation=None)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_conv2_" + name, self.build_adversarial_conv2)(img)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_norm2_" + name, self.build_normalizer)(img)
 
-        return logit
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_conv3_" + name, self.build_adversarial_conv3)(img)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_norm3_" + name, self.build_normalizer)(img)
 
-    def build_adversarial_local(self, img, reuse=None, name=None):
-        bs = img.get_shape().as_list()[0]
-        with tf.compat.v1.variable_scope(name, reuse=reuse):
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_conv4_" + name, self.build_adversarial_conv4)(img)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_norm4_" + name, self.build_normalizer)(img)
 
-            def lrelu(x, leak=0.2, name="lrelu"):
-                with tf.compat.v1.variable_scope(name):
-                    f1 = 0.5 * (1 + leak)
-                    f2 = 0.5 * (1 - leak)
-                    return f1 * x + f2 * abs(x)
-
-            size = 128
-            activation_fn = lrelu
-
-            img = tf.keras.layers.Conv2D(filters=size / 2, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tf.keras.layers.Conv2D(filters=size, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
-            img = tf.keras.layers.Conv2D(filters=size * 2, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
-            img = tf.keras.layers.Conv2D(filters=size * 2, kernel_size=4,
-                            strides=(2,2), activation=activation_fn)(img)
-            img = tfa.layers.InstanceNormalization()(img)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_conv5_" + name, self.build_adversarial_conv5)(img)
+            img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_norm5_" + name, self.build_normalizer)(img)
 
             logit = tf.compat.v1.layers.dense(tf.reshape(
                 img, [bs, -1]), 1, activation=None)
 
         return logit
+
+    def build_adversarial_global(self, img, reuse=None, name='global'):
+        return self.build_adversarial(img, reuse, name)
+
+    def build_adversarial_local(self, img, reuse=None, name='local'):
+        return self.build_adversarial(img, reuse, name)
+
+    # @tf.compat.v1.keras.utils.track_tf1_style_variables
+    # def build_adversarial_local(self, img, reuse=None, name=None):
+    #     bs = img.get_shape().as_list()[0]
+    #     with tf.compat.v1.variable_scope(name, reuse=reuse):
+
+    #         def lrelu(x, leak=0.2, name="lrelu"):
+    #             with tf.compat.v1.variable_scope(name):
+    #                 f1 = 0.5 * (1 + leak)
+    #                 f2 = 0.5 * (1 - leak)
+    #                 return f1 * x + f2 * abs(x)
+
+    #         self.size = 128
+    #         activation_fn = lrelu
+
+    #         img = tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4,
+    #                         strides=(2,2), activation=activation_fn)(img)
+            
+    #         img = tf.keras.layers.Conv2D(filters=self.size, kernel_size=4,
+    #                         strides=(2,2), activation=activation_fn)(img)
+    #         img = tfa.layers.InstanceNormalization()(img)
+
+    #         img = tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
+    #                         strides=(2,2), activation=activation_fn)(img)
+    #         img = tfa.layers.InstanceNormalization()(img)
+            
+    #         img = tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
+    #                         strides=(2,2), activation=activation_fn)(img)
+    #         img = tfa.layers.InstanceNormalization()(img)
+
+    #         logit = tf.compat.v1.layers.dense(tf.reshape(
+    #             img, [bs, -1]), 1, activation=None)
+
+    #     return logit
 
 

@@ -19,7 +19,7 @@ class Grb(tf.keras.layers.Layer):
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def new_atrous_conv_layer(self, bottom, filter_shape, rate, name=None):
     with tf.compat.v1.variable_scope(name):
-      initializer = tf.compat.v1.keras.initializers.glorot_normal()
+      initializer = tf.compat.v1.keras.initializers.glorot_normal(seed=3)
       W = tf.compat.v1.get_variable(
           "W",
           shape=filter_shape,

@@ -141,7 +141,7 @@ with tf.compat.v1.Session(config=config) as sess:
 
 
         trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
-        trainset = trainset.shuffle(args.trainset_length)
+        #trainset = trainset.shuffle(args.trainset_length)
         trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
         trainset = trainset.batch(args.batch_size).repeat()
 
@@ -169,7 +169,7 @@ with tf.compat.v1.Session(config=config) as sess:
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
 
-                        reconstruction_ori, reconstruction = model.build_reconstruction(left_gt)
+                        reconstruction_ori, reconstruction = model(left_gt)
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
@@ -305,7 +305,7 @@ with tf.compat.v1.Session(config=config) as sess:
                     _, g_val, ag_val, d_val = sess.run(
                         [train_op_G, aver_loss_g, aver_loss_ag, aver_loss_d],
                         feed_dict=inp_dict)
-                if iters % 20 == 0:
+                if iters % 1 == 0:
                     print("Iter:", iters, 'loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
                     itimer.lap()
                 iters += 1
