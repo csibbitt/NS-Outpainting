@@ -315,7 +315,7 @@ with tf.compat.v1.Session(config=config) as sess:
                     _, g_val, ag_val, d_val = sess.run(
                         [train_op_G, aver_loss_g, aver_loss_ag, aver_loss_d],
                         feed_dict=inp_dict)
-                if iters % 1 == 0:
+                if iters % 20 == 0:
                     print("Iter:", iters, 'loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
                     itimer.lap()
                 iters += 1
@@ -355,7 +355,7 @@ with tf.compat.v1.Session(config=config) as sess:
                             rec_hid = (255. * (rec_val + 1) /
                                        2.).astype(np.uint8)
                             test_ori = (255. * (test_ori + 1) /
-                                       2.).astype(npq.uint8)
+                                       2.).astype(np.uint8)
                             Image.fromarray(rec_hid).save(os.path.join(
                                 result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.jpg'))
                             if epoch == 0:

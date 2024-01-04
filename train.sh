@@ -14,10 +14,10 @@ if [ ! -z "${CHECKPOINT}" ]; then CKPT_OPTS=" --checkpoint-path './model/-${CHEC
 
 python train_model.py \
   --f \
+  --date $(date +%Y%m%d) \
+  --exp-index $(date +%H%M) \
   --trainset-path ./tf_dataset_new/trainset.tfr \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
   --num-gpu 1 \
-  --batch-size 2 \
-  --warmup-steps 1 \
   ${CKPT_OPTS}
