@@ -18,7 +18,6 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
   def build_regularizer(self):
     return tf.keras.regularizers.L2(self.decay)
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.filter1,
                                  kernel_size=(1, 1),
@@ -27,7 +26,6 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
                                  kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "conv_regularizer2a", self.build_regularizer),
                                  kernel_initializer=self.initializer, use_bias=False, padding='same')
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def build_conv2(self):
     return tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size), strides=(self.stride, self.stride), 
@@ -35,7 +33,6 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
                                 padding='same', kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2b", self.build_regularizer),
                                 kernel_initializer=self.initializer, use_bias=False)
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def build_conv3(self):
     return tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 name=self.conv_name_base + '2c',

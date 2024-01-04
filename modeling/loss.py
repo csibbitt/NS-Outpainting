@@ -27,7 +27,7 @@ class Loss():
         loss_adv_D = - tf.reduce_mean(input_tensor=adversarial_pos - adversarial_neg)
 
         differences = fake - real
-        alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1])
+        alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1], seed=1)
         interpolates = real + tf.multiply(alpha, differences)
         gradients = tf.gradients(dis_fun(
             interpolates, reuse=tf.compat.v1.AUTO_REUSE, name=name), [interpolates])[0]

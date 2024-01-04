@@ -42,31 +42,31 @@ class Model(tf.keras.Model):
         return tf.keras.layers.Conv2DTranspose(512, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT4", self.build_regularizer),
-                bias_initializer=None)
+                bias_initializer=None, use_bias=False)
 
     def build_convT3(self):
         return tf.keras.layers.Conv2DTranspose(256, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT3", self.build_regularizer),
-                bias_initializer=None)
+                bias_initializer=None, use_bias=False)
 
     def build_convT2(self):
         return tf.keras.layers.Conv2DTranspose(128, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT2", self.build_regularizer),
-                bias_initializer=None)
+                bias_initializer=None, use_bias=False)
 
     def build_convT1(self):
         return tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT1", self.build_regularizer),
-                bias_initializer=None)
+                bias_initializer=None, use_bias=False)
 
     def build_convT0(self):
         return tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT0", self.build_regularizer),
-                bias_initializer=None)
+                bias_initializer=None, use_bias=False)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
     def call(self, images, reuse=None):
@@ -206,19 +206,19 @@ class Model(tf.keras.Model):
 
     def build_adversarial_global_conv2(self):
         return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_global_conv3(self):
         return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_global_conv4(self):
         return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_global_conv5(self):
         return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
     def build_adversarial_global(self, img, reuse=None, name='global'):
@@ -259,15 +259,15 @@ class Model(tf.keras.Model):
 
     def build_adversarial_local_conv2(self):
         return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_local_conv3(self):
         return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_local_conv4(self):
         return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
-                            strides=(2,2), activation=self.activation_fn, padding='same')
+                            strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
     def build_adversarial_local(self, img, reuse=None, name=None):
