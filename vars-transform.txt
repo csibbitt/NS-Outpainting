@@ -1,0 +1,28 @@
+both
+---
+s!_\d+/!_#/
+
+v1
+---
+s!(^.*beta:0.*$)\n(^.*gamma:0.*$)!$2\n$1!
+
+sed -e 's!/conv2d.*/instance_normalization_#/!/instance_normalization_#/!;s!fully_connected!dense!s!biases!bias!' -i.bak
+  s!/conv2d.*/instance_normalization_#/!/instance_normalization_#/!
+  s!fully_connected!dense!
+  s!biases!bias!
+
+
+v2
+---
+sed -e 's!tower_0/!!;s!cpu_variables/model/GEN/!cpu_variables/GEN/!;s!/GEN/convolutional_block/!/GEN/!;s!/GEN/rct/!/GEN/!;s!/GEN/shc/!/GEN/!;s!/GEN/grb/!/GEN/!;s!/GEN/identity_block/!/GEN/!;s!normalization/!normalization_#/!;s!conv2d/!conv2d_#/!' -i.bak 
+  s!tower_0/!!
+  s!cpu_variables/model/GEN/!cpu_variables/GEN/!
+  s!/GEN/convolutional_block/!/GEN/!
+  s!/GEN/rct/!/GEN/!
+  s!/GEN/shc/!/GEN/!
+  s!/GEN/grb/!/GEN/!
+  s!/GEN/identity_block/!/GEN/!
+  s!normalization/!normalization_#/!
+  s!conv2d/!conv2d_#/!
+
+
