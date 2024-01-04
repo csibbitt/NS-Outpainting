@@ -186,10 +186,10 @@ with tf.compat.v1.Session(config=config) as sess:
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
                         loss_D = loss_adv_D
 
-                        var_G = list(filter(lambda x: x.name.startswith(
-                            'cpu_variables/GEN'), tf.compat.v1.trainable_variables()))
-                        var_D = list(filter(lambda x: x.name.startswith(
-                            'cpu_variables/DIS'), tf.compat.v1.trainable_variables()))
+                        var_G = list(filter(lambda x: x.name.find(
+                            'cpu_variables/GEN') != -1, tf.compat.v1.trainable_variables()))
+                        var_D = list(filter(lambda x: x.name.find(
+                            'cpu_variables/DIS') != -1, tf.compat.v1.trainable_variables()))
 
 
                         grad_g = train_op_G.compute_gradients(

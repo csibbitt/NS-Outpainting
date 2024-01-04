@@ -146,7 +146,7 @@ with tf.compat.v1.Session(config=config) as sess:
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
 
-                        reconstruction_ori, reconstruction = model.build_reconstruction(left_gt)
+                        reconstruction_ori, reconstruction = model(left_gt)
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
