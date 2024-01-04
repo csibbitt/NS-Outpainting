@@ -86,7 +86,7 @@ exp_name = exp_date + '/' + str(args.exp_index)
 print("Start Exp:", exp_name)
 output_path = base_path + exp_name + '/'
 model_path = output_path + 'models/'
-tensorboard_path = output_path + 'log/'
+tensorboard_path = base_path + '/'
 result_path = output_path + 'results/'
 
 if not os.path.exists(model_path):

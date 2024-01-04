@@ -1,4 +1,5 @@
 model/
+checkpoint-link
 __pycache__
 dataset/*.tfr
 logs/
