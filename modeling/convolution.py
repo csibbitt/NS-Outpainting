@@ -10,7 +10,7 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
     super().__init__(*args, **kwargs)
 
     self.decay = decay
-    self.initializer = tf.compat.v1.keras.initializers.glorot_normal(seed=1)
+    self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
 
   def build_normalizer(self):
     return tfa.layers.InstanceNormalization()

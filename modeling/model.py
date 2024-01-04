@@ -72,7 +72,7 @@ class Model(tf.keras.Model):
     def call(self, images, reuse=None):
         with tf.compat.v1.variable_scope('GEN', reuse=reuse):
             x = images
-            self.initializer = tf.compat.v1.keras.initializers.glorot_normal(seed=1)
+            self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
             # stage 1
 
             x = tf.compat.v1.keras.utils.get_or_create_layer("main_conv0", self.build_conv0)(x)

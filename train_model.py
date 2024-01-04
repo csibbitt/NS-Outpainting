@@ -130,10 +130,10 @@ config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.Optimizer
 print("Start building model...")
 with tf.compat.v1.Session(config=config) as sess:
 
-    tf.compat.v1.random.set_random_seed(1)
-    tf.keras.utils.set_random_seed(1)
-    tf.config.experimental.enable_op_determinism()
-    tf.random.set_seed(1)
+    # tf.compat.v1.random.set_random_seed(1)
+    # tf.keras.utils.set_random_seed(1)
+    # tf.config.experimental.enable_op_determinism()
+    # tf.random.set_seed(1)
 
     with tf.device('/cpu:0'):
 
@@ -148,7 +148,7 @@ with tf.compat.v1.Session(config=config) as sess:
 
 
         trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
-        #trainset = trainset.shuffle(args.trainset_length)
+        trainset = trainset.shuffle(args.trainset_length)
         trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
         trainset = trainset.batch(args.batch_size).repeat()
 
