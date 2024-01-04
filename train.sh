@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CHECKPOINT="6594"
+CHECKPOINT=""
 export CUDA_HOME=/usr/lib/cuda
 export XLA_FLAGS="--xla_gpu_cuda_data_dir=${CUDA_HOME}"
 #export XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/share/miniconda/lib/ # Genesis
