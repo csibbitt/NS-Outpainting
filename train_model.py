@@ -192,9 +192,9 @@ with tf.compat.v1.Session(config=config) as sess:
                         loss_D = loss_adv_D
 
                         var_G = list(filter(lambda x: x.name.find(
-                            'cpu_variables/GEN') != -1, tf.compat.v1.trainable_variables()))
+                            '/GEN/') != -1, tf.compat.v1.trainable_variables()))
                         var_D = list(filter(lambda x: x.name.find(
-                            'cpu_variables/DIS') != -1, tf.compat.v1.trainable_variables()))
+                            '/DIS') != -1, tf.compat.v1.trainable_variables()))
 
 # ***** Check these in debugger
                         grad_g = train_op_G.compute_gradients(
@@ -306,7 +306,6 @@ with tf.compat.v1.Session(config=config) as sess:
                     _ = sess.run(
                         [train_op_D],
                         feed_dict=inp_dict)
-
 
                 if iters % 50 == 0:
 
