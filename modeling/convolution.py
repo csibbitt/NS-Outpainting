@@ -23,7 +23,7 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
                                  name=self.conv_name_base + '2a',
-                                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "conv_regularizer2a", self.build_regularizer),
+                                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2a", self.build_regularizer),
                                  kernel_initializer=self.initializer, use_bias=False, padding='same')
 
   def build_conv2(self):
