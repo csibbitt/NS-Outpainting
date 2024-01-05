@@ -21,6 +21,7 @@ python train_model.py \
   --log-path ./logs/ \
   --num-gpu 1 \
 \
+  --dump-vars \
   --deterministic-seed 1 \
   --trainset-length 4 \
   --testset-length 4 \

@@ -17,13 +17,13 @@ class Rct(tf.keras.layers.Layer):
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.size, 1, strides=(1,1), activation=None,
                     padding='same',
-                    kernel_regularizer=self.regularizer,
+                    kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
 
   def build_conv2(self):
     return tf.keras.layers.Conv2D(self.output_size, 1, strides=(1,1), activation=None,
                     padding='same',
-                    kernel_regularizer=self.regularizer,
+                    kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables

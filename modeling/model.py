@@ -204,23 +204,23 @@ class Model(tf.keras.Model):
 
 
     def build_adversarial_global_conv1(self):
-        return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same')
 
     def build_adversarial_global_conv2(self):
-        return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_global_conv3(self):
-        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_global_conv4(self):
-        return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_global_conv5(self):
-        return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
@@ -257,19 +257,19 @@ class Model(tf.keras.Model):
         return logit
 
     def build_adversarial_local_conv1(self):
-        return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same')
 
     def build_adversarial_local_conv2(self):
-        return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_local_conv3(self):
-        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     def build_adversarial_local_conv4(self):
-        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4,
+        return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
                             strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
