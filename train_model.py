@@ -1,16 +1,14 @@
-import random
 import os
 from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from tensorflow.python.training.moving_averages import assign_moving_average
 from modeling.model import Model
 from modeling.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
 import argparse
-
 import time
+import cProfile
 
 class Timer():
     def __init__(self, label):
@@ -71,6 +69,12 @@ parser.add_argument('--log-path', type=str, default='./logs/')
 parser.add_argument('--checkpoint-path', type=str, default=None)
 parser.add_argument('--resume-step', type=int, default=0)
 
+# determinism
+parser.add_argument('--deterministic-seed', type=int, default=0)
+parser.add_argument('--dump-vars', action='store_true', default=False)
+
+
+
 
 args = parser.parse_args()
 
@@ -118,7 +122,7 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 
 
-
+#def main():
 
 model = Model(args)
 loss = Loss(args)
@@ -130,10 +134,11 @@ config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.Optimizer
 print("Start building model...")
 with tf.compat.v1.Session(config=config) as sess:
 
-    # tf.compat.v1.random.set_random_seed(1)
-    # tf.keras.utils.set_random_seed(1)
-    # tf.config.experimental.enable_op_determinism()
-    # tf.random.set_seed(1)
+    if args.deterministic_seed != 0:
+        tf.compat.v1.random.set_random_seed(1)
+        tf.keras.utils.set_random_seed(1)
+        tf.config.experimental.enable_op_determinism()
+        tf.random.set_seed(1)
 
     with tf.device('/cpu:0'):
 
@@ -247,8 +252,9 @@ with tf.compat.v1.Session(config=config) as sess:
 
         import tf_slim as slim
 
-        model_vars = tf.compat.v1.trainable_variables()
-        slim.model_analyzer.analyze_vars(model_vars, print_info=True)
+        if args.dump_vars:
+            model_vars = tf.compat.v1.trainable_variables()
+            slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
         print('Start training...')
 
@@ -382,3 +388,5 @@ with tf.compat.v1.Session(config=config) as sess:
                 if np.isnan(reconstruction_vals.min()) or np.isnan(reconstruction_vals.max()):
                     print("NaN detected!!")
             etimer.stop()
+
+#cProfile.run('main()')

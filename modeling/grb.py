@@ -13,8 +13,8 @@ class Grb(tf.keras.layers.Layer):
   def build_normalizer(self):
     return tfa.layers.InstanceNormalization()
 
-  def build_regularizer(self):
-    return tf.keras.regularizers.L2(self.decay)
+  # def build_regularizer(self):
+  #   return tf.keras.regularizers.L2(self.decay)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def new_atrous_conv_layer(self, bottom, filter_shape, rate, name=None):
@@ -23,7 +23,7 @@ class Grb(tf.keras.layers.Layer):
       W = tf.compat.v1.get_variable(
           "W",
           shape=filter_shape,
-          regularizer=tf.compat.v1.keras.utils.get_or_create_layer("grb_regularizer_" + name, self.build_regularizer),
+          regularizer=tf.keras.regularizers.L2(self.decay),
           initializer=initializer)
 
       x = tf.nn.atrous_conv2d(

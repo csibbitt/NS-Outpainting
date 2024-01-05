@@ -11,39 +11,40 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
 
     self.decay = decay
     self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
+    self.regularizer = tf.keras.regularizers.L2(self.decay)
 
   def build_normalizer(self):
     return tfa.layers.InstanceNormalization()
 
-  def build_regularizer(self):
-    return tf.keras.regularizers.L2(self.decay)
+  # def build_regularizer(self):
+  #   return tf.keras.regularizers.L2(self.decay)
 
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.filter1,
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
                                  name=self.conv_name_base + '2a',
-                                 kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2a", self.build_regularizer),
+                                 kernel_regularizer=self.regularizer,
                                  kernel_initializer=self.initializer, use_bias=False, padding='same')
 
   def build_conv2(self):
     return tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size), strides=(self.stride, self.stride), 
                                 name=self.conv_name_base +'2b',
-                                padding='same', kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2b", self.build_regularizer),
+                                padding='same', kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
 
   def build_conv3(self):
     return tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 name=self.conv_name_base + '2c',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer2c", self.build_regularizer),
+                                kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
 
   def build_conv_short(self):
     return tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 strides=(self.stride, self.stride),
                                 name=self.conv_name_base + '1',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_regularizer1", self.build_regularizer),
+                                kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables

@@ -5,24 +5,25 @@ import modeling.relu as mr
 # Global residual block
 class Rct(tf.keras.layers.Layer):
 
-  def build_regularizer(self):
-    return tf.keras.regularizers.L2(self.decay)
+  # def build_regularizer(self):
+  #   return tf.keras.regularizers.L2(self.decay)
 
   def __init__(self, decay, batch_size_per_gpu, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.decay = decay
     self.batch_size_per_gpu = batch_size_per_gpu
+    self.regularizer = tf.keras.regularizers.L2(self.decay)
 
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.size, 1, strides=(1,1), activation=None,
                     padding='same',
-                    kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("rct_regularizer1", self.build_regularizer),
+                    kernel_regularizer=self.regularizer,
                     bias_initializer=None, use_bias=False)
 
   def build_conv2(self):
     return tf.keras.layers.Conv2D(self.output_size, 1, strides=(1,1), activation=None,
                     padding='same',
-                    kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("rct_regularizer2", self.build_regularizer),
+                    kernel_regularizer=self.regularizer,
                     bias_initializer=None, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables

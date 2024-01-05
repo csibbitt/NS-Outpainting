@@ -20,8 +20,11 @@ class Model(tf.keras.Model):
         self.rct = Rct(cfg.weight_decay, self.cfg.batch_size_per_gpu)
         self.shc = Shc(cfg.weight_decay)
 
-    def build_regularizer(self):
-        return tf.keras.regularizers.L2(self.cfg.weight_decay)
+        self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
+        self.regularizer = tf.keras.regularizers.L2(self.cfg.weight_decay)
+
+    # def build_regularizer(self):
+    #     return tf.keras.regularizers.L2(self.cfg.weight_decay)
 
     def build_normalizer(self):
         return tfa.layers.InstanceNormalization()
@@ -29,50 +32,50 @@ class Model(tf.keras.Model):
     def build_conv0(self):
         return tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4),
                 strides=(2, 2), name='conv0',
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_conv0_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 padding='same', kernel_initializer=self.initializer, use_bias=False)
 
     def build_conv1(self):
         return tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4),
                 strides=(2, 2), name='conv1', padding='same',
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_conv1_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 kernel_initializer=self.initializer, use_bias=False)
 
     def build_convT4(self):
         return tf.keras.layers.Conv2DTranspose(512, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT4_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 bias_initializer=None, use_bias=False)
 
     def build_convT3(self):
         return tf.keras.layers.Conv2DTranspose(256, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT3_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 bias_initializer=None, use_bias=False)
 
     def build_convT2(self):
         return tf.keras.layers.Conv2DTranspose(128, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT2_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 bias_initializer=None, use_bias=False)
 
     def build_convT1(self):
         return tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT1_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 bias_initializer=None, use_bias=False)
 
     def build_convT0(self):
         return tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
                 activation=None, padding='same', kernel_initializer=self.initializer,
-                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("main_convT0_regularizer", self.build_regularizer),
+                kernel_regularizer=self.regularizer,
                 bias_initializer=None, use_bias=False)
 
     @tf.compat.v1.keras.utils.track_tf1_style_variables
     def call(self, images, reuse=None):
         with tf.compat.v1.variable_scope('GEN', reuse=reuse):
             x = images
-            self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
+
             # stage 1
 
             x = tf.compat.v1.keras.utils.get_or_create_layer("main_conv0", self.build_conv0)(x)

@@ -75,6 +75,7 @@ class Loss():
         # Calculate the total loss for the current tower.
         regularization_losses = tf.compat.v1.get_collection(
             tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
+    # ***** CHECK THESE IN DEBUGGER
         total_loss = tf.add_n(
             losses + regularization_losses, name='total_loss')
 

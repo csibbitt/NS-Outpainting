@@ -11,31 +11,32 @@ class IdentityBlock(tf.keras.layers.Layer):
 
     self.decay = decay
     self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
+    self.regularizer = tf.keras.regularizers.L2(self.decay)
 
   def build_normalizer(self):
     return tfa.layers.InstanceNormalization()
 
-  def build_regularizer(self):
-    return tf.keras.regularizers.L2(self.decay)
+  # def build_regularizer(self):
+  #   return tf.keras.regularizers.L2(self.decay)
 
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.filter1,
                                 kernel_size=(1, 1), strides=(1, 1),
                                 name=self.conv_name_base + '2a',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_regularizer1", self.build_regularizer),
+                                kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False, padding='same')
 
   def build_conv2(self):
     return tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size),
                                 padding='same', name=self.conv_name_base + '2b',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_regularizer2", self.build_regularizer),
+                                kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
 
   def build_conv3(self):
     return tf.keras.layers.Conv2D(self.filter3,
                                 kernel_size=(1, 1), name=self.conv_name_base + '2c',
-                                kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_regularizer3", self.build_regularizer),
+                                kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables

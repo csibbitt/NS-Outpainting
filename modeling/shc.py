@@ -6,30 +6,30 @@ import modeling.relu as mr
 # Skip Horizontal Connection
 class Shc(tf.keras.layers.Layer):
 
-  def build_regularizer(self):
-    return tf.keras.regularizers.L2(self.decay)
+  def __init__(self, decay, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.decay = decay
+    self.regularizer = tf.keras.regularizers.L2(self.decay)
+
+# ***** Check initializers here
 
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
                   padding='same', use_bias=False,
-                  kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("shc_conv1" + str(self.channels) + "_reg", self.build_regularizer),
+                  kernel_regularizer=self.regularizer
     )
 
   def build_conv2(self):
     return tf.keras.layers.Conv2D(self.channels / 2, 3, strides=(1,1), activation=tf.nn.relu,
                   padding='same', use_bias=False,
-                  kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("shc_conv2" + str(self.channels) + "_reg", self.build_regularizer)
+                  kernel_regularizer=self.regularizer
     )
 
   def build_conv3(self):
     return tf.keras.layers.Conv2D(self.channels, 1, strides=(1,1), activation=None,
                   padding='same', use_bias=False,
-                  kernel_regularizer=tf.compat.v1.keras.utils.get_or_create_layer("shc_conv3" + str(self.channels) + "_reg", self.build_regularizer)
+                  kernel_regularizer=self.regularizer
     )
-
-  def __init__(self, decay, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self.decay = decay
 
   def call(self, x, shortcut, channels):
     self.channels = channels
