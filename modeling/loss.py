@@ -65,29 +65,6 @@ class Loss():
 
         return loss_adv_G, loss_adv_D
 
-
-    def average_losses(self, loss):
-        tf.compat.v1.add_to_collection('losses', loss)
-
-        # Assemble all of the losses for the current tower only.
-        losses = tf.compat.v1.get_collection('losses')
-
-        # Calculate the total loss for the current tower.
-        regularization_losses = tf.compat.v1.get_collection(
-            tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
-    # ***** CHECK THESE IN DEBUGGER
-        total_loss = tf.add_n(
-            losses + regularization_losses, name='total_loss')
-
-        # Compute the moving average of all individual losses and the total
-        # loss.
-        loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
-        loss_averages_op = loss_averages.apply(losses + [total_loss])
-
-        with tf.control_dependencies([loss_averages_op]):
-            total_loss = tf.identity(total_loss)
-        return total_loss
-
     def average_gradients(self, tower_grads):
         average_grads = []
         for grad_and_vars in zip(*tower_grads):

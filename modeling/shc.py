@@ -11,8 +11,6 @@ class Shc(tf.keras.layers.Layer):
     self.decay = decay
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
-# ***** Check initializers here
-
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
                   padding='same', use_bias=False,

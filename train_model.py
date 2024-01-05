@@ -186,7 +186,7 @@ with tf.compat.v1.Session(config=config) as sess:
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
                         loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(model, groundtruth, reconstruction)
-
+# ***** Check these in debugger
                         reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
                         loss_D = loss_adv_D
@@ -196,7 +196,7 @@ with tf.compat.v1.Session(config=config) as sess:
                         var_D = list(filter(lambda x: x.name.find(
                             'cpu_variables/DIS') != -1, tf.compat.v1.trainable_variables()))
 
-
+# ***** Check these in debugger
                         grad_g = train_op_G.compute_gradients(
                             loss_G, var_list=var_G)
                         grad_d = train_op_D.compute_gradients(
@@ -250,9 +250,8 @@ with tf.compat.v1.Session(config=config) as sess:
             iters = args.resume_step
             print('Done.')
 
-        import tf_slim as slim
-
         if args.dump_vars:
+            import tf_slim as slim
             model_vars = tf.compat.v1.trainable_variables()
             slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
