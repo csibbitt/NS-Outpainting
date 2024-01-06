@@ -10,7 +10,7 @@ class Encoder(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.initializer = tf.compat.v1.keras.initializers.glorot_normal()
+    self.initializer = tf.keras.initializers.GlorotNormal()
     self.regularizer = tf.keras.regularizers.L2(decay)
     self.convolutional_block = ConvolutionalBlock(decay)
     self.identity_block = IdentityBlock(decay, name='identity_block')
