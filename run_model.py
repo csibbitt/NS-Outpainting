@@ -7,7 +7,7 @@ import tensorflow as tf
 from modeling.model import Model
 from modeling.loss import Loss
 from dataset.build_dataset import input_hasher
-from dataset.parse import parse_trainset, parse_testset
+from dataset.parse import parse_testset
 import argparse
 import math
 
@@ -27,66 +27,18 @@ parser.add_argument('--testset-path', type=str, default='./dataset/testset.tfr')
 parser.add_argument('--trainset-length', type=int, default=5041)
 parser.add_argument('--testset-length', type=int, default=2000)  # we flip every image in testset
 
-# training
-parser.add_argument('--base-lr', type=float, default=0.0001)
+# # training
 parser.add_argument('--batch-size', type=int, default=20)
 parser.add_argument('--weight-decay', type=float, default=0.00002)
-parser.add_argument('--epoch', type=int, default=1500)
-parser.add_argument('--lr-decay-epoch', type=int, default=1000)
-parser.add_argument('--critic-steps', type=int, default=3)
-parser.add_argument('--warmup-steps', type=int, default=1000)
+
 parser.add_argument('--workers', type=int, default=2)
-parser.add_argument('--clip-gradient', action='store_true', default=False)
-parser.add_argument('--clip-gradient-value', type=float, default=0.1)
-
-
-# modeling
-parser.add_argument('--beta', type=float, default=0.9)
-parser.add_argument('--lambda-gp', type=float, default=10)
-parser.add_argument('--lambda-rec', type=float, default=0.998)
 
 # checkpoint
 parser.add_argument('--log-path', type=str, default='./logs/')
 parser.add_argument('--checkpoint-path', type=str, default=None)
 parser.add_argument('--resume-step', type=int, default=0)
 
-
-#args = parser.parse_args()
-
 args = parser.parse_args("--batch-size 1 --testset-length 2000 --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr --checkpoint-path model/-19939".split())
-
-
-# prepare path
-base_path = args.log_path
-exp_date = args.date
-if exp_date is None:
-    print('Exp date error!')
-    import sys
-    sys.exit()
-exp_name = exp_date + '/' + str(args.exp_index)
-print("Start Exp:", exp_name)
-output_path = base_path + exp_name + '/'
-model_path = output_path + 'models/'
-tensorboard_path = output_path + 'log/'
-result_path = output_path + 'results/'
-
-if not os.path.exists(model_path):
-    os.makedirs(model_path)
-if not os.path.exists(tensorboard_path):
-    os.makedirs(tensorboard_path)
-if not os.path.exists(result_path):
-    os.makedirs(result_path)
-elif not args.f:
-    if args.checkpoint_path is None:
-        print('Exp exist!')
-        import sys
-        sys.exit()
-else:
-    import shutil
-    shutil.rmtree(model_path)
-    os.makedirs(model_path)
-    shutil.rmtree(tensorboard_path)
-    os.makedirs(tensorboard_path)
 
 # prepare gpu
 num_gpu = args.num_gpu
@@ -96,9 +48,6 @@ for i in range(num_gpu - 1):
     gpu_id = gpu_id + ',' + str(start_gpu + i + 1)
 os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
-
-
-
 
 model = Model(args)
 loss = Loss(args)
@@ -112,14 +61,6 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
     print("Start building model...")
     with tf.compat.v1.Session(config=config) as sess:
         with tf.device('/cpu:0'):
-
-            trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
-            trainset = trainset.shuffle(args.trainset_length)
-            trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
-            trainset = trainset.batch(args.batch_size).repeat()
-
-            train_iterator = trainset.make_one_shot_iterator()
-            train_im = train_iterator.get_next()
 
             testset = tf.compat.v1.data.TFRecordDataset(filenames=[args.testset_path])
             testset = testset.map(parse_testset, num_parallel_calls=args.workers)
@@ -146,41 +87,28 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
 
                             models.append((reconstruction, right_recon))
                             params.append(groundtruth)
-
             print('Done.')
 
             print('Start reducing towers on cpu...')
-
             reconstructions, right_recons = zip(*models)
-
             with tf.device('/gpu:0'):
-
                 reconstructions = tf.concat(reconstructions, axis=0)
                 right_recons = tf.concat(right_recons, axis=0)
-
             print('Done.')
 
-
-            iters = 0
             saver = tf.compat.v1.train.Saver(max_to_keep=5)
             if args.checkpoint_path is None:
                 sess.run(tf.compat.v1.global_variables_initializer())
             else:
                 print('Start loading checkpoint...')
                 saver.restore(sess, args.checkpoint_path)
-                iters = args.resume_step
                 print('Done.')
 
             print('run eval...')
-
-
             stitch_mask1 = np.ones((args.batch_size, 128, 128, 3))
             for i in range(128):
                 stitch_mask1[:, :, i, :] = 1. / 127. * (127. - i)
             stitch_mask2 = stitch_mask1[:, :, ::-1, :]
-
-
-            ii = 0
 
             for _ in range(math.floor(args.testset_length / args.batch_size)):
                 if len(input_images) == 0:
@@ -198,8 +126,6 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
                 origins1 = test_oris.copy()
 
                 oris = None
-                # oris
-                print('oris ' + str(ii))
                 while not shuffle_flag.get():
                     inp_dict = {}
                     inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, test_oris, params)
@@ -214,10 +140,8 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
                         pred2 = oris[:, :, -128:, :]
                         gt = origins1[:, :, :128, :]
                         p1_m1 = np.concatenate((gt * stitch_mask1 + pred1 * stitch_mask2, pred2), axis=2)
-                        # *** GUI Integration
                         img_callback(Image.fromarray((255. * (p1_m1[0] + 1) / 2.).astype(np.uint8)))
                         prediction_count = 2
-                        # *** 
                     else:
                         reconstruction_vals, prediction_vals = sess.run(
                             [reconstruction, right_recons],
@@ -225,25 +149,22 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
                         A = oris[:, :, -128:, :]
                         B = reconstruction_vals[:, :, :128, :]
                         C = A * stitch_mask1 + B * stitch_mask2
-                        # *** GUI Integration
                         patch_count = np.shape(oris)[2] / 128
                         start_column = 128 if patch_count >= buffer_size.get() else 0
                         oris = np.concatenate((oris[:, :, start_column:-128, :], C, prediction_vals), axis=2)
                         img_callback(Image.fromarray((255. * (oris[0] + 1) / 2.).astype(np.uint8)))
                         prediction_count += 1
-                        # ***
+
                     # Mix in original image to add style stability
                     ms = mix_strength.get() / 100
                     test_oris = np.concatenate(((prediction_vals +  ms * gt)/ (1 + ms), prediction_vals), axis=2)
+
                 shuffle_flag.set(False)
 
-
-import glob
-import random
 def mainSessionMock(buffer_size, img_callback, shuffle_flag, input_images, seed_hash, mix_strength):
     eval_width = 128
     eval_height = 128
-    file_list = glob.glob('mock_images/endless*.jpg')
+    file_list = glob('mock_images/endless*.jpg')
     while True:
         random.shuffle(file_list)
         mockImage = Image.open(file_list[0])
