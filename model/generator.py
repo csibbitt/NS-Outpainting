@@ -8,8 +8,8 @@ from model.decoder import Decoder
 import model.relu as mr
 
 class Generator(tf.keras.Model):
-    def __init__(self, cfg):
-        super().__init__()
+    def __init__(self, cfg, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.cfg = cfg
         self.encoder = Encoder(cfg.weight_decay)
         self.decoder = Decoder(cfg.weight_decay)

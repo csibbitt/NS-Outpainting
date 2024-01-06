@@ -1,10 +1,8 @@
-import random
 import os
 from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from tensorflow.python.training.moving_averages import assign_moving_average
 from model.generator import Generator
 from model.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
@@ -98,7 +96,7 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 
 
-generator = Generator(args)
+generator = Generator(args, name='model')
 loss = Loss(args)
 
 config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
