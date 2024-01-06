@@ -20,16 +20,16 @@ def parse_trainset(example_proto):
     return image
 
 
-def parse_testset(example_proto):
+def parse_testset(example_proto, shape=[64 * 2, 128 * 2, 3]):
 
     dics = {}
     dics['image'] = tf.io.FixedLenFeature(shape=[], dtype=tf.string)
 
-    parsed_example = tf.io.parse_single_example(
+    parsed_example = tf.compat.v1.parse_single_example(
         serialized=example_proto, features=dics)
     image = tf.io.decode_raw(parsed_example['image'], out_type=tf.uint8)
 
-    image = tf.reshape(image, shape=[64 * 2, 128 * 2, 3])
+    image = tf.reshape(image, shape=shape)
 
     image = tf.cast(image, tf.float32) * (2. / 255) - 1.0
     

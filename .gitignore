@@ -1,5 +1,6 @@
+v1_model/
 model/
-checkpoint-link
+outputs/
 __pycache__
 dataset/*.tfr
 logs/
@@ -8,3 +9,4 @@ content
 tf_dataset_new
 setup.sh
 .vscode/
+inputpics/

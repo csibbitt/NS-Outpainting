@@ -4,7 +4,7 @@ Initial migrations are complete, but many transitional compat APIs and deprecate
 
 This code has not yet been fully tested and may not work (Please send GPUs).
 
-I'm planning to use this as the core of an art project that makes never-ending landscape panoramas.
+The model is being used as the core of an art project that makes never-ending landscape panoramas.
 
 # Very Long Natural Scenery Image Prediction by Outpainting (NS-Outpainting)
 A neural architecture for scenery image outpaiting ([ICCV 2019](http://openaccess.thecvf.com/content_ICCV_2019/papers/Yang_Very_Long_Natural_Scenery_Image_Prediction_by_Outpainting_ICCV_2019_paper.pdf)), implemented in [TensorFlow](http://www.tensorflow.org).
