@@ -2,9 +2,13 @@ import tensorflow as tf
 import numpy as np
 import math
 
+from model.discriminator import DiscriminatorLocal, DiscriminatorGlobal
+
 class Loss():
     def __init__(self, cfg):
         self.cfg = cfg
+        self.discrim_g = DiscriminatorGlobal(name='DIS')
+        self.discrim_l = DiscriminatorLocal(name='DIS2')
 
     def masked_reconstruction_loss(self, gt, recon):
         loss_recon = tf.square(gt - recon)
@@ -54,11 +58,11 @@ class Loss():
         right_half_recon = tf.slice(recon, [0, 0, 128, 0], [self.cfg.batch_size_per_gpu, 128, 128, 3])
         real = gt
         fake = tf.concat([left_half_gt, right_half_recon], axis=2)
-        global_D, global_G = self.global_adversarial_loss(model.build_adversarial_global, real, fake)
+        global_D, global_G = self.global_adversarial_loss(self.discrim_g, real, fake)
 
         real = right_half_gt
         fake = right_half_recon
-        local_D, local_G = self.local_adversarial_loss(model.build_adversarial_local, real, fake)
+        local_D, local_G = self.local_adversarial_loss(self.discrim_l, real, fake)
 
         loss_adv_D = global_D + local_D
         loss_adv_G = self.cfg.beta * global_G + (1 - self.cfg.beta) * local_G

@@ -1,12 +1,12 @@
 Model
 ---
 * Faster startup for testing (limit dataset load)
-* Break out Dlocal() and Dglobal()
 * Upgrade best training checkpoint to V2 Model saves
 * Eliminate get_or_create_layer
-* Eliminate @tf.compat.v1.keras.utils.track_tf1_style_variables
 * Replace leaky-relu with tf
+* Eliminate @tf.compat.v1.keras.utils.track_tf1_style_variables
 * Refactor layout of models vs layers vs utilities
+* Refactor to tf.Loss (do I need multiples?)
 * Utility to rename files with their hash
 * Figure out this NaN problem
   * Can I load a broken checkpoint and find the source?

@@ -16,9 +16,6 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
   def build_normalizer(self):
     return tfa.layers.InstanceNormalization()
 
-  # def build_regularizer(self):
-  #   return tf.keras.regularizers.L2(self.decay)
-
   def build_conv1(self):
     return tf.keras.layers.Conv2D(self.filter1,
                                  kernel_size=(1, 1),
