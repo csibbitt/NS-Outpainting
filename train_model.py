@@ -205,6 +205,7 @@ with tf.compat.v1.Session(config=config) as sess:
 
         print('Done.')
         btimer.stop()
+        model.summary()
 
         print('Start reducing towers on gpu...')
 

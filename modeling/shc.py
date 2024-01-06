@@ -1,8 +1,6 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-import modeling.relu as mr
-
 # Skip Horizontal Connection
 class Shc(tf.keras.layers.Layer):
 
@@ -29,6 +27,7 @@ class Shc(tf.keras.layers.Layer):
                   kernel_regularizer=self.regularizer, kernel_initializer=None
     )
 
+  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, x, shortcut, channels):
     self.channels = channels
 
