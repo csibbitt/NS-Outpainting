@@ -13,4 +13,5 @@ python eval_model.py \
   --num-gpu 1 \
   --checkpoint-path checkpoint/-${CHECKPOINT} \
 \
-  --batch-size 4
+  --batch-size 4 \
+  --testset-length 4
