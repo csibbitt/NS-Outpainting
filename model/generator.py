@@ -1,14 +1,13 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from modeling.rct import Rct
-from modeling.encoder import Encoder
-from modeling.decoder import Decoder
+from model.rct import Rct
+from model.encoder import Encoder
+from model.decoder import Decoder
 
+import model.relu as mr
 
-import modeling.relu as mr
-
-class Model(tf.keras.Model):
+class Generator(tf.keras.Model):
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg

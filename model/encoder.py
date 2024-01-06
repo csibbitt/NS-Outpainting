@@ -1,9 +1,9 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from modeling.convolution import ConvolutionalBlock
-from modeling.identity import IdentityBlock
-import modeling.relu as mr
+from model.convolution import ConvolutionalBlock
+from model.identity import IdentityBlock
+import model.relu as mr
 
 # Image encoder pipeline
 class Encoder(tf.keras.layers.Layer):

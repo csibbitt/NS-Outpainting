@@ -1,0 +1,23 @@
+* Utility to rename files with their hash
+* Soft-start
+  * Scale the fps up/dn subtley to adjust the position without skipping the initial frames
+* Instant mix-in
+* gallery of seed images with mixin controls
+* Some sort of bugs with buffer size getting out of sync and stuff
+* Split into GUI w/ model in separate python module repo
+* Huggingface compatibility
+
+[GPUs required]
+* Finish migration to full TF V2
+* Full TF2 validation training
+* Profiling
+* High rez training
+* Stability
+
+On T4@Colab:
+Epocs: 1500 @250s = 378,000s (105hrs)
+Iters: 235500 @1.3s = 316,800s (88hrs)
+
+On 3090@Genesis:
+Epocs: 1500 @64s = 96,000s (26hrs)
+Iters: 235500 @ 0.2s = 47,100 (13hrs)

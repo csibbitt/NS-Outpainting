@@ -10,7 +10,7 @@ if [ ! -f tf_dataset_new/trainset.tfr ]; then
   unzip tf_scenery.zip
 fi
 
-if [ ! -z "${CHECKPOINT}" ]; then CKPT_OPTS=" --checkpoint-path ./model/-${CHECKPOINT}  --resume-step ${CHECKPOINT}"; fi
+if [ ! -z "${CHECKPOINT}" ]; then CKPT_OPTS=" --checkpoint-path ./checkpoint/-${CHECKPOINT}  --resume-step ${CHECKPOINT}"; fi
 
 python train_model.py \
   --f \

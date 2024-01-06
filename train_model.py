@@ -3,12 +3,11 @@ from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from modeling.model import Model
-from modeling.loss import Loss
+from model.model import Generator
+from model.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
 import argparse
 import time
-import cProfile
 
 class Timer():
     def __init__(self, label):
@@ -59,7 +58,7 @@ parser.add_argument('--clip-gradient', action='store_true', default=False)
 parser.add_argument('--clip-gradient-value', type=float, default=0.1)
 
 
-# modeling
+# model
 parser.add_argument('--beta', type=float, default=0.9)
 parser.add_argument('--lambda-gp', type=float, default=10)
 parser.add_argument('--lambda-rec', type=float, default=0.998)
@@ -124,7 +123,7 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 #def main():
 
-model = Model(args)
+generator = Generator(args)
 loss = Loss(args)
 
 config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
@@ -181,11 +180,11 @@ with tf.compat.v1.Session(config=config) as sess:
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
 
-                        reconstruction_ori, reconstruction = model(left_gt)
+                        reconstruction_ori, reconstruction = generator(left_gt)
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
-                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(model, groundtruth, reconstruction)
+                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(generator, groundtruth, reconstruction)
                         reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
                         loss_D = loss_adv_D
@@ -205,7 +204,7 @@ with tf.compat.v1.Session(config=config) as sess:
 
         print('Done.')
         btimer.stop()
-        model.summary()
+        generator.summary()
 
         print('Start reducing towers on gpu...')
 

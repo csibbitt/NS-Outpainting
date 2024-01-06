@@ -4,8 +4,8 @@ from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from modeling.model import Model
-from modeling.loss import Loss
+from model.model import Generator
+from model.loss import Loss
 from dataset.build_dataset import input_hasher
 from dataset.parse import parse_testset
 import argparse
@@ -38,7 +38,8 @@ parser.add_argument('--log-path', type=str, default='./logs/')
 parser.add_argument('--checkpoint-path', type=str, default=None)
 parser.add_argument('--resume-step', type=int, default=0)
 
-args = parser.parse_args("--batch-size 1 --testset-length 2000 --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr --checkpoint-path model/-19939".split())
+# ***** Checkpoint handling
+args = parser.parse_args("--batch-size 1 --testset-length 2000 --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr --checkpoint-path checkpoint/-19939".split())
 
 # prepare gpu
 num_gpu = args.num_gpu
@@ -49,7 +50,7 @@ for i in range(num_gpu - 1):
 os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
-model = Model(args)
+generator = Generator(args)
 loss = Loss(args)
 
 config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
@@ -82,7 +83,7 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
                                 tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
                             left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                            _, reconstruction = model(left_gt)
+                            _, reconstruction = generator(left_gt)
                             right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                             models.append((reconstruction, right_recon))

@@ -1,5 +1,6 @@
-v1_model/
-model/
+v1_checkpoint/
+checkpoint/*
+!checkpoint/.gitkeep
 outputs/
 __pycache__
 dataset/*.tfr

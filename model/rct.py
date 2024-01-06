@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-import modeling.relu as mr
+import model.relu as mr
 
 # Global residual block
 class Rct(tf.keras.layers.Layer):

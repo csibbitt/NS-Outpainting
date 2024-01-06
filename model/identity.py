@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-import modeling.relu as mr
+import model.relu as mr
 
 # Global residual block
 class IdentityBlock(tf.keras.layers.Layer):

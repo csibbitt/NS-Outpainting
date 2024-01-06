@@ -1,10 +1,10 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from modeling.grb import Grb
-from modeling.identity import IdentityBlock
-import modeling.relu as mr
-from modeling.shc import Shc
+from model.grb import Grb
+from model.identity import IdentityBlock
+import model.relu as mr
+from model.shc import Shc
 
 
 # Image encoder pipeline
