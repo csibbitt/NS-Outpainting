@@ -3,7 +3,7 @@ from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from model.model import Generator
+from model.generator import Generator
 from model.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
 import argparse

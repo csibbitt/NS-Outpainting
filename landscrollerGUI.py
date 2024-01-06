@@ -4,6 +4,9 @@ import threading
 import run_model as Eval
 from landscroller import App, ControlWindow, DisplayWindow
 
+import os
+os.environ['XLA_FLAGS'] = "--xla_gpu_cuda_data_dir=/usr/lib/cuda"
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Infinite landscape scroller')

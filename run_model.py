@@ -4,7 +4,7 @@ from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from model.model import Generator
+from model.generator import Generator
 from model.loss import Loss
 from dataset.build_dataset import input_hasher
 from dataset.parse import parse_testset
@@ -50,7 +50,7 @@ for i in range(num_gpu - 1):
 os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
-generator = Generator(args)
+generator = Generator(args, name='model')
 loss = Loss(args)
 
 config = tf.compat.v1.ConfigProto(allow_soft_placement=True)

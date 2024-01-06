@@ -1,18 +1,31 @@
+Model
+---
+* Faster startup for testing (limit dataset load)
+* Break out Dlocal() and Dglobal()
+* Upgrade best training checkpoint to V2 Model saves
+* Eliminate get_or_create_layer
+* Eliminate @tf.compat.v1.keras.utils.track_tf1_style_variables
+* Replace leaky-relu with tf
+* Refactor layout of models vs layers vs utilities
 * Utility to rename files with their hash
+* Figure out this NaN problem
+  * Can I load a broken checkpoint and find the source?
+* Finish migration to full TF V2
+* Full TF2 validation training
+* Huggingface compatibility
+* Profiling
+* High rez training
+* Stability
+
+GUI
+---
 * Soft-start
   * Scale the fps up/dn subtley to adjust the position without skipping the initial frames
 * Instant mix-in
 * gallery of seed images with mixin controls
 * Some sort of bugs with buffer size getting out of sync and stuff
 * Split into GUI w/ model in separate python module repo
-* Huggingface compatibility
 
-[GPUs required]
-* Finish migration to full TF V2
-* Full TF2 validation training
-* Profiling
-* High rez training
-* Stability
 
 On T4@Colab:
 Epocs: 1500 @250s = 378,000s (105hrs)
