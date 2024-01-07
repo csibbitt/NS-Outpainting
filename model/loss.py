@@ -26,7 +26,7 @@ class Loss():
 
     def adversarial_loss(self, dis_fun, real, fake, name):
         adversarial_pos = dis_fun(real, name=name)
-        adversarial_neg = dis_fun(fake, reuse=tf.compat.v1.AUTO_REUSE, name=name)
+        adversarial_neg = dis_fun(fake, name=name)
 
         loss_adv_D = - tf.reduce_mean(input_tensor=adversarial_pos - adversarial_neg)
 

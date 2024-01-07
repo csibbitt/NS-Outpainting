@@ -187,12 +187,10 @@ with tf.compat.v1.Session(config=config) as sess:
                         loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(generator, groundtruth, reconstruction)
 
                         #***** This is broken, always returns an empty collection
+                        # reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                         # Suspect regularization penalties are nerfed - or does TF2 apply them automatically at each layer? (doubt)
-                        reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
-                        # Line should be this; but need to visually test results:
-                        #   reg_losses = generator.losses
-                        # These appear to be empty in both old and new code in early (9) iterations?
-                        # But if I change it here, the training losses do change.
+                        # Line should be this; and early visual results seem okay:
+                        reg_losses = generator.losses
                         # The old code was finding 99 tensors, but the new code finds 201. Hmmm....
                         #*****
 
@@ -326,7 +324,7 @@ with tf.compat.v1.Session(config=config) as sess:
                     print("Iter:", iters, 'loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
                     itimer.lap()
                 iters += 1
-                sess.run(step.assign_add(1))
+                sess.run(step.assign(iters))
             saver.save(sess, model_path, global_step=iters)
 
 

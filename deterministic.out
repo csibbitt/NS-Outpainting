@@ -1,3 +1,22 @@
+Iter: 0 loss_g: 0.939791 loss_d: -13.23538 loss_adv_g: 4.21256
+iter lap taking : 239s
+epoch 0 taking : 249s
+2024-01-07 14:01:20.767783: I tensorflow/stream_executor/gpu/asm_compiler.cc:323] ptxas warning : Registers are spilled to local memory in function 'fusion_2240', 4 bytes spill stores, 4 bytes spill loads
+
+=========================================================================
+loss_g: 0.9100172 loss_d: -33.54506 loss_adv_g: 10.552801
+=========================================================================
+epoch 1 taking : 173s
+=========================================================================
+loss_g: 0.90754557 loss_d: -65.53219 loss_adv_g: 17.989595
+=========================================================================
+epoch 2 taking : 44s
+
+
+-=-=-=-=-
+
+Without the regularization loss changes
+==
 Iter: 0 loss_g: 0.4186737 loss_d: -14.674999 loss_adv_g: 4.340949
 iter lap taking : 208s
 epoch 0 taking : 217s

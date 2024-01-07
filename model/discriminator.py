@@ -31,7 +31,7 @@ class DiscriminatorGlobal(tf.keras.Model):
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
-  def call(self, img, reuse=None, name=None):
+  def call(self, img, name='DIS'):
     bs = img.get_shape().as_list()[0]
 
     def lrelu(x, leak=0.2, name="lrelu"):
@@ -85,7 +85,7 @@ class DiscriminatorLocal(tf.keras.Model):
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
-  def call(self, img, reuse=None, name=None):
+  def call(self, img, name='DIS2'):
 
     bs = img.get_shape().as_list()[0]
 
