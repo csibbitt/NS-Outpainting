@@ -120,9 +120,6 @@ os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 
-
-#def main():
-
 generator = Generator(args)
 loss = Loss(args)
 
@@ -132,6 +129,9 @@ config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.Optimizer
 
 print("Start building model...")
 with tf.compat.v1.Session(config=config) as sess:
+
+    writer = tf.summary.create_file_writer(tensorboard_path)
+    sess.run(writer.init())
 
     if args.deterministic_seed != 0:
         tf.compat.v1.random.set_random_seed(1)
@@ -179,13 +179,23 @@ with tf.compat.v1.Session(config=config) as sess:
                             tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-
                         reconstruction_ori, reconstruction = generator(left_gt)
+
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
                         loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(generator, groundtruth, reconstruction)
+
+                        #***** This is broken, always returns an empty collection
+                        # Suspect regularization penalties are nerfed - or does TF2 apply them automatically at each layer? (doubt)
                         reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
+                        # Line should be this; but need to visually test results:
+                        #   reg_losses = generator.losses
+                        # These appear to be empty in both old and new code in early (9) iterations?
+                        # But if I change it here, the training losses do change.
+                        # The old code was finding 99 tensors, but the new code finds 201. Hmmm....
+                        #*****
+
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
                         loss_D = loss_adv_D
 
@@ -209,7 +219,10 @@ with tf.compat.v1.Session(config=config) as sess:
         grad_gs, grad_ds, loss_Gs, loss_Ds, loss_adv_Gs, loss_recs, reconstructions = zip(*models)
         groundtruths = params
 
+        iters = 0
+        step = tf.Variable(0, dtype=tf.int64, trainable=False)
         with tf.device('/gpu:0'):
+
             aver_loss_g = tf.reduce_mean(input_tensor=loss_Gs)
             aver_loss_d = tf.reduce_mean(input_tensor=loss_Ds)
             aver_loss_ag = tf.reduce_mean(input_tensor=loss_adv_Gs)
@@ -223,20 +236,16 @@ with tf.compat.v1.Session(config=config) as sess:
             groundtruths = tf.concat(groundtruths, axis=0)
             reconstructions = tf.concat(reconstructions, axis=0)
 
-            tf.compat.v1.summary.scalar('loss_g', aver_loss_g)
-            tf.compat.v1.summary.scalar('loss_d', aver_loss_d)
-            tf.compat.v1.summary.scalar('loss_ag', aver_loss_ag)
-            tf.compat.v1.summary.scalar('loss_rec', aver_loss_rec)
-            tf.compat.v1.summary.image('groundtruth', groundtruths, 2)
-            tf.compat.v1.summary.image('reconstruction', reconstructions, 2)
-
-            merged = tf.compat.v1.summary.merge_all()
-            writer = tf.compat.v1.summary.FileWriter(tensorboard_path, sess.graph)
+            with writer.as_default(step=step):
+                tf.summary.scalar('loss_g', aver_loss_g)
+                tf.summary.scalar('loss_d', aver_loss_d)
+                tf.summary.scalar('loss_ag', aver_loss_ag)
+                tf.summary.scalar('loss_rec', aver_loss_rec)
+                tf.summary.image('groundtruth', tf.dtypes.cast(((groundtruths + 1) * 255. / 2.), tf.uint8), max_outputs=2)
+                tf.summary.image('reconstruction', tf.dtypes.cast(((reconstructions + 1) * 255. / 2.), tf.uint8), max_outputs=2)
 
         print('Done.')
 
-
-        iters = 0
         saver = tf.compat.v1.train.Saver(max_to_keep=3)
         if args.checkpoint_path is None:
             sess.run(tf.compat.v1.global_variables_initializer())
@@ -252,7 +261,6 @@ with tf.compat.v1.Session(config=config) as sess:
             slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
         print('Start training...')
-
         for epoch in range(args.epoch):
             etimer = Timer(f'epoch {epoch}')
             if epoch > args.lr_decay_epoch:
@@ -305,11 +313,10 @@ with tf.compat.v1.Session(config=config) as sess:
 
                 if iters % 50 == 0:
 
-                    _, g_val, ag_val, rs, d_val = sess.run(
-                        [train_op_G, aver_loss_g, aver_loss_ag, merged, aver_loss_d],
+                    _, g_val, ag_val, d_val, _ = sess.run(
+                        [train_op_G, aver_loss_g, aver_loss_ag, aver_loss_d, tf.compat.v1.summary.all_v2_summary_ops()],
                         feed_dict=inp_dict)
-                    writer.add_summary(rs, iters)
-
+                    sess.run(writer.flush())
                 else:
 
                     _, g_val, ag_val, d_val = sess.run(
@@ -319,6 +326,7 @@ with tf.compat.v1.Session(config=config) as sess:
                     print("Iter:", iters, 'loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
                     itimer.lap()
                 iters += 1
+                sess.run(step.assign_add(1))
             saver.save(sess, model_path, global_step=iters)
 
 
@@ -366,14 +374,11 @@ with tf.compat.v1.Session(config=config) as sess:
                 d_vals /= n_batchs
                 ag_vals /= n_batchs
 
-                summary = tf.compat.v1.Summary()
-                summary.value.add(tag='eval/g',
-                                  simple_value=g_vals)
-                summary.value.add(tag='eval/d',
-                                  simple_value=d_vals)
-                summary.value.add(tag='eval/ag',
-                                  simple_value=ag_vals)
-                writer.add_summary(summary, iters)
+                with writer.as_default(step=step):
+                    tf.summary.scalar('eval/g', g_vals)
+                    tf.summary.scalar('eval/d', d_vals)
+                    tf.summary.scalar('eval/ag', ag_vals)
+                sess.run(writer.flush())
 
                 print("=========================================================================")
                 print('loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)

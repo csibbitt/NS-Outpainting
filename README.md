@@ -1,8 +1,11 @@
 # WIP
 ## Migrating this code to Tensor Flow 2
+
 Initial migrations are complete, but many transitional compat APIs and deprecated methods remain.
 
-This code has not yet been fully tested and may not work (Please send GPUs).
+I'm learning TensorFlow as I go. This code has not yet been fully tested and may not work (Please send GPUs).
+
+I have done a partial training run (to Step ~75,000 before hitting the "NaN Detected" code) and the results are great.
 
 The model is being used as the core of an art project that makes never-ending landscape panoramas.
 
