@@ -21,4 +21,4 @@ class Generator(tf.keras.Model):
             x, shortcuts = self.encoder(images)
             x = self.rct(x)
             recon = self.decoder(x, shortcuts)
-        return recon, tf.nn.tanh(recon)
+        return tf.nn.tanh(recon)

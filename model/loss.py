@@ -24,9 +24,9 @@ class Loss():
         loss_recon = tf.reduce_mean(input_tensor=loss_recon)
         return loss_recon
 
-    def adversarial_loss(self, dis_fun, real, fake, name):
-        adversarial_pos = dis_fun(real, name=name)
-        adversarial_neg = dis_fun(fake, name=name)
+    def adversarial_loss(self, dis_fun, real, fake):
+        adversarial_pos = dis_fun(real)
+        adversarial_neg = dis_fun(fake)
 
         loss_adv_D = - tf.reduce_mean(input_tensor=adversarial_pos - adversarial_neg)
 
@@ -34,7 +34,7 @@ class Loss():
         alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1])
         interpolates = real + tf.multiply(alpha, differences)
         gradients = tf.gradients(dis_fun(
-            interpolates, reuse=tf.compat.v1.AUTO_REUSE, name=name), [interpolates])[0]
+            interpolates), [interpolates])[0]
         slopes = tf.sqrt(tf.reduce_sum(
             input_tensor=tf.square(gradients), axis=[1, 2, 3]) + 1e-10)
         gradients_penalty = tf.reduce_mean(input_tensor=(slopes - 1.) ** 2)
@@ -44,25 +44,18 @@ class Loss():
 
         return loss_adv_D, loss_adv_G
 
-    def global_adversarial_loss(self, dis_fun, real, fake):
-        return self.adversarial_loss(dis_fun, real, fake, 'DIS')
-
-    def local_adversarial_loss(self, dis_fun, real, fake):
-        return self.adversarial_loss(dis_fun, real, fake, 'DIS2')
-
-
-    def global_and_local_adv_loss(self, model, gt, recon):
+    def global_and_local_adv_loss(self, gt, recon):
 
         left_half_gt = tf.slice(gt, [0, 0, 0, 0], [self.cfg.batch_size_per_gpu, 128, 128, 3])
         right_half_gt = tf.slice(gt, [0, 0, 128, 0], [self.cfg.batch_size_per_gpu, 128, 128, 3])
         right_half_recon = tf.slice(recon, [0, 0, 128, 0], [self.cfg.batch_size_per_gpu, 128, 128, 3])
         real = gt
         fake = tf.concat([left_half_gt, right_half_recon], axis=2)
-        global_D, global_G = self.global_adversarial_loss(self.discrim_g, real, fake)
+        global_D, global_G = self.adversarial_loss(self.discrim_g, real, fake)
 
         real = right_half_gt
         fake = right_half_recon
-        local_D, local_G = self.local_adversarial_loss(self.discrim_l, real, fake)
+        local_D, local_G = self.adversarial_loss(self.discrim_l, real, fake)
 
         loss_adv_D = global_D + local_D
         loss_adv_G = self.cfg.beta * global_G + (1 - self.cfg.beta) * local_G

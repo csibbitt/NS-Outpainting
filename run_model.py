@@ -83,7 +83,7 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
                                 tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
                             left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                            _, reconstruction = generator(left_gt)
+                            reconstruction = generator(left_gt)
                             right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                             models.append((reconstruction, right_recon))

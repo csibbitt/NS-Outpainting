@@ -3,14 +3,14 @@ Model
 * Faster startup for testing (limit dataset load)
 * Eliminate @tf.compat.v1.keras.utils.track_tf1_style_variables
 * Eliminate get_or_create_layer
+* Eliminate session usage
 * Replace leaky-relu with tf
 * Refactor layout of models vs layers vs utilities
-* Upgrade best training checkpoint to V2 Model saves
+* Upgrade best training checkpoint to V2 checkpoint
 * Refactor to tf.Loss (do I need multiples?)
 * Utility to rename files with their hash
 * Figure out this NaN problem
   * Can I load a broken checkpoint and find the source?
-* Finish migration to full TF V2
 * Full TF2 validation training
 * Huggingface compatibility
 * Profiling

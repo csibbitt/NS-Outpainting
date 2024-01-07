@@ -55,30 +55,35 @@ D_g = DiscriminatorGlobal()
 # Create all weights on the first call
 print('===== Running all models once')
 G(inputs)
-# D_l(inputs)
-# D_g(inputs)
+D_l(inputs)
+D_g(inputs)
 
 # Verify that no new weights are created in followup calls
 with assert_no_variable_creations():
   print('===== Running all models again, looking for new vars')
   G(inputs)
-  # D_l(inputs)
-  # D_g(inputs)
+  D_l(inputs)
+  D_g(inputs)
   print('===== Done')
 with catch_and_raise_created_variables():
   print('Running all models one last time')
   G(inputs)
-  # D_l(inputs)
-  # D_g(inputs)
+  D_l(inputs)
+  D_g(inputs)
   print('===== Done')
 
-print(len(G.trainable_variables) + len(D_l.trainable_variables) + len(D_g.trainable_variables))
 
 _, recon = G(inputs)
+
+for var in tf.compat.v1.train.list_variables('./checkpoint/-19939'):
+  print(var)
 
 # tf.Tensor([ 0.48804274 -0.9505034   0.24720697], shape=(3,), dtype=float32)
 # tf.Tensor([ 0.11747289 -0.07015078  0.36418724], shape=(3,), dtype=float32)
 # tf.Tensor([-0.04279513 -0.03300458 -0.18818763], shape=(3,), dtype=float32)
+# 336
 print(recon[0][0][0])
 print(recon[16][64][64])
 print(recon[-1][-1][-1])
+print(len(G.trainable_variables) + len(D_l.trainable_variables) + len(D_g.trainable_variables))
+

@@ -179,12 +179,12 @@ with tf.compat.v1.Session(config=config) as sess:
                             tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
                         left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                        reconstruction_ori, reconstruction = generator(left_gt)
+                        reconstruction = generator(left_gt)
 
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
-                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(generator, groundtruth, reconstruction)
+                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
 
                         #***** This is broken, always returns an empty collection
                         # reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)

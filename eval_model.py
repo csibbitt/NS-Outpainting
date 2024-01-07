@@ -148,7 +148,7 @@ with tf.compat.v1.Session(config=config) as sess:
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
                         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
-                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(generator, groundtruth, reconstruction)
+                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
 
                         reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
