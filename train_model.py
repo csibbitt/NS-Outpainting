@@ -145,10 +145,10 @@ with tf.compat.v1.Session(config=config) as sess:
         learning_rate = tf.compat.v1.placeholder(tf.float32, [])
         lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
 
-        train_op_G = tf.compat.v1.train.AdamOptimizer(
-            learning_rate=learning_rate, beta1=0.5, beta2=0.9)
-        train_op_D = tf.compat.v1.train.AdamOptimizer(
-            learning_rate=learning_rate, beta1=0.5, beta2=0.9)
+        train_op_G = tf.keras.optimizers.legacy.Adam(
+            learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+        train_op_D = tf.keras.optimizers.legacy.Adam(
+            learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
 
         trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
@@ -200,10 +200,12 @@ with tf.compat.v1.Session(config=config) as sess:
                         var_G = generator.trainable_variables
                         var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
 
-                        grad_g = train_op_G.compute_gradients(
-                            loss_G, var_list=var_G)
-                        grad_d = train_op_D.compute_gradients(
-                            loss_D, var_list=var_D)
+                        grad_g = train_op_G.get_gradients( #** When moving out of v1 Graph mode this will need to change back to compute_gradients
+                            loss_G, var_G)
+                        grad_g = zip(grad_g, var_G) #** Required because get_gradients only returns grads but compute_gradients returns grad,var tuples
+                        grad_d = train_op_D.get_gradients(
+                            loss_D, var_D)
+                        grad_d = zip(grad_d, var_D)
 
                         models.append((grad_g, grad_d, loss_G, loss_D, loss_adv_G, loss_rec, reconstruction))
                         params.append(groundtruth)
@@ -227,9 +229,9 @@ with tf.compat.v1.Session(config=config) as sess:
             aver_loss_rec = tf.reduce_mean(input_tensor=loss_recs)
 
             train_op_G = train_op_G.apply_gradients(
-                loss.average_gradients(grad_gs))
+                loss.average_gradients(grad_gs), experimental_aggregate_gradients=False) #** skip_gradients_aggregation=True when moving off legacy (unless I sort out the gradient averaging since it defaults to a sum)
             train_op_D = train_op_D.apply_gradients(
-                loss.average_gradients(grad_ds))
+                loss.average_gradients(grad_ds), experimental_aggregate_gradients=False)
 
             groundtruths = tf.concat(groundtruths, axis=0)
             reconstructions = tf.concat(reconstructions, axis=0)
