@@ -21,13 +21,13 @@ python train_model.py \
   --log-path ./logs/ \
   --num-gpu 1 \
 \
-  --dump-vars \
-  --deterministic-seed 1 \
-  --trainset-length 4 \
-  --testset-length 4 \
-  --batch-size 2 \
-  --epoch 3 \
-  --warmup-steps 2 \
-  # --load-v2-checkpoint \
-  # --checkpoint-path logs/20240107/1955/models/v2checkpoint/ckpt-1
+  # --dump-vars \
+  # --deterministic-seed 1 \
+  # --trainset-length 4 \
+  # --testset-length 4 \
+  # --batch-size 2 \
+  # --epoch 3 \
+  # --warmup-steps 2 \
+  # # --load-v2-checkpoint \
+  # # --checkpoint-path logs/20240107/1955/models/v2checkpoint/ckpt-1
   ${CKPT_OPTS}

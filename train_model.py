@@ -84,12 +84,10 @@ if exp_date is None:
 exp_name = exp_date + '/' + str(args.exp_index)
 print("Start Exp:", exp_name)
 output_path = base_path + exp_name + '/'
-model_path = output_path + 'models/'
+ckpt_path = output_path + 'checkpoint/'
 tensorboard_path = output_path + 'log/'
 result_path = output_path + 'results/'
 
-if not os.path.exists(model_path):
-    os.makedirs(model_path)
 if not os.path.exists(tensorboard_path):
     os.makedirs(tensorboard_path)
 if not os.path.exists(result_path):
@@ -101,8 +99,6 @@ elif not args.f:
         sys.exit()
 else:
     import shutil
-    shutil.rmtree(model_path)
-    os.makedirs(model_path)
     shutil.rmtree(tensorboard_path)
     os.makedirs(tensorboard_path)
 
@@ -245,7 +241,7 @@ with tf.compat.v1.Session() as sess:
                                    discrim_g=loss.discrim_g,
                                    discrim_l=loss.discrim_l)
         print('Creating v2 checkpoint manager')
-        ckpt_manager = tf.train.CheckpointManager(ckpt, directory=model_path, max_to_keep=5)
+        ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
         saver = tf.compat.v1.train.Saver(max_to_keep=3) # *****
 
         if args.checkpoint_path is None:
