@@ -115,6 +115,8 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 generator = Generator(args)
 loss = Loss(args)
 
+tf.config.optimizer.set_jit(True)
+
 print("Start building model...")
 with tf.compat.v1.Session() as sess:
 
@@ -249,7 +251,6 @@ with tf.compat.v1.Session() as sess:
         else:
             if args.load_v2_checkpoint:
                 print('Start v2 loading checkpoint...')
-                ckpt_path = args.checkpoint_path
                 status = ckpt.restore(args.checkpoint_path)
                 status.assert_consumed()
                 iters = step
