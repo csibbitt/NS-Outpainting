@@ -97,9 +97,8 @@ with tf.compat.v1.Session() as sess:
   g_and_vs = []
   for gpunum in range(0,3):
     g_and_v = []
-    for iter in range(0,5):
-      for varnum in range(0,4):
-        g_and_v.append([tf.constant([iter]), tf.constant([iter])])
+    for varnum in range(0,4):
+      g_and_v.append([tf.constant([iter]), tf.constant([iter])])
     g_and_vs.append(g_and_v)
 
     av = loss.average_gradients(g_and_vs)
