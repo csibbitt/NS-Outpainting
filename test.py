@@ -74,10 +74,7 @@ from model.loss import Loss
 #   print('===== Done')
 
 
-# _, recon = G(inputs)
-
-# for var in tf.compat.v1.train.list_variables('./checkpoint/-19939'):
-#   print(var)
+# recon = G(inputs)
 
 # # tf.Tensor([ 0.48804274 -0.9505034   0.24720697], shape=(3,), dtype=float32)
 # # tf.Tensor([ 0.11747289 -0.07015078  0.36418724], shape=(3,), dtype=float32)
@@ -90,19 +87,22 @@ from model.loss import Loss
 
             # Note that each grad_and_vars looks like the following:
             #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
-with tf.compat.v1.Session() as sess:
+# with tf.compat.v1.Session() as sess:
 
-  loss = Loss(type('cfg',(),{}))
+#   loss = Loss(type('cfg',(),{}))
 
-  g_and_vs = []
-  for gpunum in range(0,3):
-    g_and_v = []
-    for varnum in range(0,4):
-      g_and_v.append([tf.constant([iter]), tf.constant([iter])])
-    g_and_vs.append(g_and_v)
+#   g_and_vs = []
+#   for gpunum in range(0,3):
+#     g_and_v = []
+#     for varnum in range(0,4):
+#       g_and_v.append([tf.constant([iter]), tf.constant([iter])])
+#     g_and_vs.append(g_and_v)
 
-    av = loss.average_gradients(g_and_vs)
+#     av = loss.average_gradients(g_and_vs)
 
-    out = sess.run([av])
+#     out = sess.run([av])
 
-  print(out) 
+#   print(out) 
+
+for var in tf.compat.v1.train.list_variables('logs/20240108/37/models/-1'):
+   print(var)

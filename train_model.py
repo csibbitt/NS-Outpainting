@@ -123,12 +123,8 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 generator = Generator(args)
 loss = Loss(args)
 
-config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
-config.gpu_options.allow_growth = True
-config.graph_options.optimizer_options.global_jit_level = tf.compat.v1.OptimizerOptions.ON_1
-
 print("Start building model...")
-with tf.compat.v1.Session(config=config) as sess:
+with tf.compat.v1.Session() as sess:
 
     writer = tf.summary.create_file_writer(tensorboard_path)
     sess.run(writer.init())
