@@ -28,4 +28,6 @@ python train_model.py \
   --batch-size 2 \
   --epoch 3 \
   --warmup-steps 2 \
+  # --load-v2-checkpoint \
+  # --checkpoint-path logs/20240107/1955/models/v2checkpoint/ckpt-1
   ${CKPT_OPTS}

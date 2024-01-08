@@ -145,9 +145,9 @@ with tf.compat.v1.Session(config=config) as sess:
         learning_rate = tf.compat.v1.placeholder(tf.float32, [])
         lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
 
-        train_op_G = tf.keras.optimizers.legacy.Adam(
+        G_opt = tf.keras.optimizers.legacy.Adam(
             learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
-        train_op_D = tf.keras.optimizers.legacy.Adam(
+        D_opt = tf.keras.optimizers.legacy.Adam(
             learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
 
@@ -200,10 +200,10 @@ with tf.compat.v1.Session(config=config) as sess:
                         var_G = generator.trainable_variables
                         var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
 
-                        grad_g = train_op_G.get_gradients( #** When moving out of v1 Graph mode this will need to change back to compute_gradients
+                        grad_g = G_opt.get_gradients( #** When moving off legacy.Adam this will need to change back to compute_gradients
                             loss_G, var_G)
                         grad_g = zip(grad_g, var_G) #** Required because get_gradients only returns grads but compute_gradients returns grad,var tuples
-                        grad_d = train_op_D.get_gradients(
+                        grad_d = D_opt.get_gradients(
                             loss_D, var_D)
                         grad_d = zip(grad_d, var_D)
 
@@ -228,9 +228,9 @@ with tf.compat.v1.Session(config=config) as sess:
             aver_loss_ag = tf.reduce_mean(input_tensor=loss_adv_Gs)
             aver_loss_rec = tf.reduce_mean(input_tensor=loss_recs)
 
-            train_op_G = train_op_G.apply_gradients(
+            train_op_G = G_opt.apply_gradients(
                 loss.average_gradients(grad_gs), experimental_aggregate_gradients=False) #** skip_gradients_aggregation=True when moving off legacy (unless I sort out the gradient averaging since it defaults to a sum)
-            train_op_D = train_op_D.apply_gradients(
+            train_op_D = D_opt.apply_gradients(
                 loss.average_gradients(grad_ds), experimental_aggregate_gradients=False)
 
             groundtruths = tf.concat(groundtruths, axis=0)
@@ -246,10 +246,29 @@ with tf.compat.v1.Session(config=config) as sess:
 
         print('Done.')
 
-        saver = tf.compat.v1.train.Saver(max_to_keep=3)
+        ckpt = tf.train.Checkpoint(step=step,
+                                   G_opt=G_opt,
+                                   D_opt=D_opt,
+                                   generator=generator,
+                                   discrim_g=loss.discrim_g,
+                                   discrim_l=loss.discrim_l)
+        print('Creating v2 checkpoint manager')
+        ckpt_manager = tf.train.CheckpointManager(ckpt, directory=model_path, max_to_keep=5)
+        saver = tf.compat.v1.train.Saver(max_to_keep=3) # *****
+
         if args.checkpoint_path is None:
             sess.run(tf.compat.v1.global_variables_initializer())
         else:
+            if args.load_v2_checkpoint:
+                print('Start v2 loading checkpoint...')
+                ckpt_path = args.checkpoint_path
+                status = ckpt.restore(args.checkpoint_path)
+                status.assert_consumed()
+                iters = step
+            else:
+                print('Start v1 loading checkpoint...')
+                saver.restore(sess, args.checkpoint_path)
+                iters = args.resume_step
             print('Start loading checkpoint...')
             saver.restore(sess, args.checkpoint_path)
             iters = args.resume_step
@@ -327,7 +346,7 @@ with tf.compat.v1.Session(config=config) as sess:
                     itimer.lap()
                 iters += 1
                 sess.run(step.assign(iters))
-            saver.save(sess, model_path, global_step=iters)
+            ckpt_manager.save()
 
 
             # testing
