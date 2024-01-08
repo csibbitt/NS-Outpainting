@@ -94,36 +94,26 @@ os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 
-
-
 generator = Generator(args, name='model')
 loss = Loss(args)
 
 print("Start building model...")
 with tf.compat.v1.Session() as sess:
     with tf.device('/cpu:0'):
-        learning_rate = tf.compat.v1.placeholder(tf.float32, [])
-        lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
 
-        train_op_G = tf.compat.v1.train.AdamOptimizer(
-            learning_rate=learning_rate, beta1=0.5, beta2=0.9)
-        train_op_D = tf.compat.v1.train.AdamOptimizer(
-            learning_rate=learning_rate, beta1=0.5, beta2=0.9)
-
-
-        trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
+        trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
         trainset = trainset.shuffle(args.trainset_length)
         trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
         trainset = trainset.batch(args.batch_size).repeat()
 
-        train_iterator = trainset.make_one_shot_iterator()
+        train_iterator = tf.compat.v1.data.make_one_shot_iterator(trainset) #**
         train_im = train_iterator.get_next()
 
-        testset = tf.compat.v1.data.TFRecordDataset(filenames=[args.testset_path])
+        testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
         testset = testset.map(parse_testset, num_parallel_calls=args.workers)
         testset = testset.batch(args.batch_size).repeat()
 
-        test_iterator = testset.make_one_shot_iterator()
+        test_iterator = tf.compat.v1.data.make_one_shot_iterator(testset) #**
         test_im = test_iterator.get_next()
 
         print('build model on gpu tower')
@@ -142,21 +132,6 @@ with tf.compat.v1.Session() as sess:
 
                         reconstruction = generator(left_gt)
                         right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
-
-                        loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
-                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
-
-                        reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
-                        loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
-                        loss_D = loss_adv_D
-
-                        var_G = generator.trainable_variables
-                        var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
-
-                        grad_g = train_op_G.compute_gradients(
-                            loss_G, var_list=var_G)
-                        grad_d = train_op_D.compute_gradients(
-                            loss_D, var_list=var_D)
 
                         models.append((reconstruction, right_recon))
                         params.append(groundtruth)

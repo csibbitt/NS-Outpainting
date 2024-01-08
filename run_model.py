@@ -59,11 +59,11 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
     with tf.compat.v1.Session() as sess:
         with tf.device('/cpu:0'):
 
-            testset = tf.compat.v1.data.TFRecordDataset(filenames=[args.testset_path])
+            testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
             testset = testset.map(parse_testset, num_parallel_calls=args.workers)
             testset = testset.batch(args.batch_size).repeat()
 
-            test_iterator = testset.make_one_shot_iterator()
+            test_iterator = tf.compat.v1.data.make_one_shot_iterator(testset) #**
             test_im = test_iterator.get_next()
 
             print('build model on gpu tower')

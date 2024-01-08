@@ -70,10 +70,6 @@ parser.add_argument('--resume-step', type=int, default=0)
 
 # determinism
 parser.add_argument('--deterministic-seed', type=int, default=0)
-parser.add_argument('--dump-vars', action='store_true', default=False)
-
-
-
 
 args = parser.parse_args()
 
@@ -147,19 +143,19 @@ with tf.compat.v1.Session() as sess:
             learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
 
-        trainset = tf.compat.v1.data.TFRecordDataset(filenames=[args.trainset_path])
+        trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
         trainset = trainset.shuffle(args.trainset_length)
         trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
         trainset = trainset.batch(args.batch_size).repeat()
 
-        train_iterator = trainset.make_one_shot_iterator()
+        train_iterator = tf.compat.v1.data.make_one_shot_iterator(trainset) #**
         train_im = train_iterator.get_next()
 
-        testset =tf.compat.v1.data.TFRecordDataset(filenames=[args.testset_path])
+        testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
         testset = testset.map(parse_testset, num_parallel_calls=args.workers)
         testset = testset.batch(args.batch_size).repeat()
 
-        test_iterator = testset.make_one_shot_iterator()
+        test_iterator = tf.compat.v1.data.make_one_shot_iterator(testset) #**
         test_im = test_iterator.get_next()
 
         print('build model on gpu tower')
@@ -270,16 +266,12 @@ with tf.compat.v1.Session() as sess:
             iters = args.resume_step
             print('Done.')
 
-        if args.dump_vars:
-            import tf_slim as slim
-            model_vars = tf.compat.v1.trainable_variables()
-            slim.model_analyzer.analyze_vars(model_vars, print_info=True)
-
         print('Start training...')
         for epoch in range(args.epoch):
             etimer = Timer(f'epoch {epoch}')
             if epoch > args.lr_decay_epoch:
-                learning_rate_val = args.base_lr / 10
+                learning_rate_val = args.base_lr / 10  # ***** This looks like a bug, after loading a checkpoing, lr will be high for some epochs
+                                                       # Would need to save/load epoch in the checkpoint
             else:
                 learning_rate_val = args.base_lr
 
