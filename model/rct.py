@@ -2,7 +2,7 @@ import tensorflow as tf
 
 import model.relu as mr
 
-# Global residual block
+# Recurrent Content Transfer
 class Rct(tf.keras.layers.Layer):
 
   # def build_regularizer(self):

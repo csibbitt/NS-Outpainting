@@ -123,33 +123,29 @@ if args.deterministic_seed != 0:
     tf.config.experimental.enable_op_determinism()
     tf.random.set_seed(1)
 
+with tf.device('/cpu:0'):
+    trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
+    trainset = trainset.shuffle(args.trainset_length)
+    trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
+    trainset = trainset.batch(args.batch_size).repeat()
+    train_im = iter(trainset)
 
-trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
-trainset = trainset.shuffle(args.trainset_length)
-trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
-trainset = trainset.batch(args.batch_size).repeat()
-
-train_im = iter(trainset)
-
-testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-testset = testset.map(parse_testset, num_parallel_calls=args.workers)
-testset = testset.batch(args.batch_size).repeat()
-
-test_im = iter(testset)
-
-learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
-lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float32, shape=[])
-
+    testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
+    testset = testset.map(parse_testset, num_parallel_calls=args.workers)
+    testset = testset.batch(args.batch_size).repeat()
+    test_im = iter(testset)
 
 generator = Generator(args)
 loss = Loss(args)
+
+learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
+lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float32, shape=[])
 
 G_opt = tf.keras.optimizers.Adam(
     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 D_opt = tf.keras.optimizers.Adam(
     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
-iters = 0
 step = tf.Variable(0, dtype=tf.int64, trainable=False)
 ckpt = tf.train.Checkpoint(step=step,
                             G_opt=G_opt,
@@ -159,12 +155,18 @@ ckpt = tf.train.Checkpoint(step=step,
                             discrim_l=loss.discrim_l)
 ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
 
+iters = 0
+
 if args.checkpoint_path is not None:
     print('Start restore checkpoint...')
     status = ckpt.restore(args.checkpoint_path).assert_consumed()
     iters = step.numpy()
     print('Done.')
 
+apply_grads_g = tf.Variable(False, dtype=tf.bool)
+apply_grads_d = tf.Variable(False, dtype=tf.bool)
+
+@tf.function
 def fwd(groundtruth):
     with tf.GradientTape() as g_G, tf.GradientTape() as g_D:
         g_G.watch(groundtruth)
@@ -174,7 +176,7 @@ def fwd(groundtruth):
         reconstruction = generator(left_gt)
 
         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
-        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
+        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction) #** Could skip this during G() warmup
 
         loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + tf.reduce_sum(generator.losses)
         loss_D = loss_adv_D
@@ -184,7 +186,11 @@ def fwd(groundtruth):
 
     grad_g = G_opt.compute_gradients(loss_G, var_G, tape=g_G)
     grad_d = D_opt.compute_gradients(loss_D, var_D, tape=g_D)
-    #grad_d = zip(grad_d, var_D)
+
+    if(apply_grads_g.value()):
+        G_opt.apply_gradients(grad_g)
+    if(apply_grads_d.value()):
+        D_opt.apply_gradients(grad_d)
 
     return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
 
@@ -201,6 +207,7 @@ for epoch in range(args.epoch):
             range(args.batch_size, args.trainset_length, args.batch_size)):
 
         if iters == 0 and args.checkpoint_path is None:
+            gtimer = Timer('G warmup')
             print('Start pretraining G!')
             lambda_rec.assign(1.)
             for t in range(args.warmup_steps):
@@ -210,10 +217,9 @@ for epoch in range(args.epoch):
                 if len(images) < args.batch_size:
                     images =  train_im.get_next()
 
+                apply_grads_g.assign(True)
                 loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
-                G_opt.apply_gradients(grad_g)
-
-
+            gtimer.stop()
             print('Pre-train G Done!')
 
         lambda_rec.assign(args.lambda_rec)
@@ -223,15 +229,19 @@ for epoch in range(args.epoch):
         else:
             n_cir = args.critic_steps
 
+        # Train D
         for t in range(n_cir):
             images =  train_im.get_next()
             if len(images) < args.batch_size:
                 images =  train_im.get_next()
+            apply_grads_g.assign(False)
+            apply_grads_d.assign(True)
             loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
-            D_opt.apply_gradients(grad_d)
 
+        # Train G
+        apply_grads_g.assign(True)
+        apply_grads_d.assign(False)
         loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
-        G_opt.apply_gradients(grad_g)
 
         if iters % 25 == 0:
             print("Iter:", iters, 'loss_g:', loss_G.numpy(), 'loss_d:', loss_D.numpy(), 'loss_adv_g:', loss_adv_G.numpy(), 'loss_rec:', loss_rec.numpy())
@@ -264,6 +274,8 @@ for epoch in range(args.epoch):
             if len(test_oris) < args.batch_size:
                 test_oris = test_im.get_next()
 
+            apply_grads_g.assign(False)
+            apply_grads_d.assign(False)
             g_val, ag_val, d_val, loss_rec, grad_g, grad_d, reconstruction_vals = fwd(test_oris)
 
             g_vals += g_val
