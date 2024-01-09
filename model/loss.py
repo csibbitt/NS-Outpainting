@@ -24,7 +24,6 @@ class Loss():
         loss_recon = tf.reduce_mean(input_tensor=loss_recon)
         return loss_recon
 
-    @tf.function
     def adversarial_loss(self, dis_fun, real, fake):
         adversarial_pos = dis_fun(real)
         adversarial_neg = dis_fun(fake)
@@ -34,8 +33,11 @@ class Loss():
         differences = fake - real
         alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1])
         interpolates = real + tf.multiply(alpha, differences)
-        gradients = tf.gradients(dis_fun(
-            interpolates), [interpolates])[0]
+        with tf.GradientTape() as g:
+            g.watch(interpolates)
+            ys = dis_fun(interpolates)
+
+        gradients = g.gradient(ys, interpolates)
         slopes = tf.sqrt(tf.reduce_sum(
             input_tensor=tf.square(gradients), axis=[1, 2, 3]) + 1e-10)
         gradients_penalty = tf.reduce_mean(input_tensor=(slopes - 1.) ** 2)
@@ -63,42 +65,42 @@ class Loss():
 
         return loss_adv_G, loss_adv_D
 
-    def average_gradients(self, tower_grads):
-        average_grads = []
-        for grad_and_vars in zip(*tower_grads):
-            # Note that each grad_and_vars looks like the following:
-            #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
-            grads = []
-            # Average over the 'tower' dimension.
-            g, _ = grad_and_vars[0]
+    # def average_gradients(self, tower_grads):
+    #     average_grads = []
+    #     for grad_and_vars in zip(*tower_grads):
+    #         # Note that each grad_and_vars looks like the following:
+    #         #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
+    #         grads = []
+    #         # Average over the 'tower' dimension.
+    #         g, _ = grad_and_vars[0]
 
-            for g, _ in grad_and_vars:
-                expanded_g = tf.expand_dims(g, 0)
-                grads.append(expanded_g)
-            grad = tf.concat(grads, axis=0)
-            grad = tf.reduce_mean(input_tensor=grad, axis=0)
+    #         for g, _ in grad_and_vars:
+    #             expanded_g = tf.expand_dims(g, 0)
+    #             grads.append(expanded_g)
+    #         grad = tf.concat(grads, axis=0)
+    #         grad = tf.reduce_mean(input_tensor=grad, axis=0)
 
-            # Keep in mind that the Variables are redundant because they are shared
-            # across towers. So .. we will just return the first tower's pointer to
-            # the Variable.
-            v = grad_and_vars[0][1]
-            grad_and_var = (grad, v)
-            average_grads.append(grad_and_var)
-        # clip
-        if self.cfg.clip_gradient:
-            gradients, variables = zip(*average_grads)
-            gradients = [
-                None if gradient is None else tf.compat.v1.clip_by_average_norm(gradient, self.cfg.clip_gradient_value)
-                for gradient in gradients]
-            average_grads = zip(gradients, variables)
-        return average_grads
+    #         # Keep in mind that the Variables are redundant because they are shared
+    #         # across towers. So .. we will just return the first tower's pointer to
+    #         # the Variable.
+    #         v = grad_and_vars[0][1]
+    #         grad_and_var = (grad, v)
+    #         average_grads.append(grad_and_var)
+    #     # clip
+    #     if self.cfg.clip_gradient:
+    #         gradients, variables = zip(*average_grads)
+    #         gradients = [
+    #             None if gradient is None else tf.compat.v1.clip_by_average_norm(gradient, self.cfg.clip_gradient_value)
+    #             for gradient in gradients]
+    #         average_grads = zip(gradients, variables)
+    #     return average_grads
 
-    def feed_all_gpu(self, inp_dict, gpu_num, payload_per_gpu, images, params):
-        for i in range(gpu_num):
-            gt = params[i]
-            start_pos = i * payload_per_gpu
-            stop_pos = (i + 1) * payload_per_gpu
-            inp_dict[gt] = images[start_pos:stop_pos]
-        return inp_dict
+    # def feed_all_gpu(self, inp_dict, gpu_num, payload_per_gpu, images, params):
+    #     for i in range(gpu_num):
+    #         gt = params[i]
+    #         start_pos = i * payload_per_gpu
+    #         stop_pos = (i + 1) * payload_per_gpu
+    #         inp_dict[gt] = images[start_pos:stop_pos]
+    #     return inp_dict
 
 

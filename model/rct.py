@@ -45,29 +45,26 @@ class Rct(tf.keras.layers.Layer):
     x_split = tf.split(x, 4, 0)
 
     ys = []
-    with tf.compat.v1.variable_scope('LSTM'):
-        with tf.compat.v1.variable_scope('encoder'):
-            lstm_cell = tf.compat.v1.keras.utils.get_or_create_layer("encoder_lstm", self.build_lstm_stack)
 
-        init_state = lstm_cell.get_initial_state(x_split[0], batch_size=self.batch_size_per_gpu, dtype=tf.float32)
-        now, _state = lstm_cell(x_split[0], init_state)
-        now, _state = lstm_cell(x_split[1], _state)
-        now, _state = lstm_cell(x_split[2], _state)
-        now, _state = lstm_cell(x_split[3], _state)
+    lstm_cell = tf.compat.v1.keras.utils.get_or_create_layer("encoder_lstm", self.build_lstm_stack)
 
-        with tf.compat.v1.variable_scope('decoder'):
-            lstm_cell2 = tf.compat.v1.keras.utils.get_or_create_layer("decoder_lstm", self.build_lstm_stack)
+    init_state = lstm_cell.get_initial_state(x_split[0], batch_size=self.batch_size_per_gpu, dtype=tf.float32)
+    now, _state = lstm_cell(x_split[0], init_state)
+    now, _state = lstm_cell(x_split[1], _state)
+    now, _state = lstm_cell(x_split[2], _state)
+    now, _state = lstm_cell(x_split[3], _state)
 
-        #predict
-        now, _state = lstm_cell2(x_split[3], _state)
-        ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
-        now, _state = lstm_cell2(now, _state)
-        ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
-        now, _state = lstm_cell2(now, _state)
-        ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
-        now, _state = lstm_cell2(now, _state)
-        ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    lstm_cell2 = tf.compat.v1.keras.utils.get_or_create_layer("decoder_lstm", self.build_lstm_stack)
 
+    #predict
+    now, _state = lstm_cell2(x_split[3], _state)
+    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    now, _state = lstm_cell2(now, _state)
+    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    now, _state = lstm_cell2(now, _state)
+    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    now, _state = lstm_cell2(now, _state)
+    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
 
     y = tf.concat(ys, axis=2)
 

@@ -51,26 +51,24 @@ class IdentityBlock(tf.keras.layers.Layer):
     else:
       activation_fn=mr.leaky_relu
 
-    with tf.compat.v1.variable_scope("id_block_stage" + str(self.stage) + self.block):
-      X_shortcut = X_input
+    X_shortcut = X_input
 
+    # First component of main path
+    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv1", self.build_conv1)(X_input)
+    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer1", self.build_normalizer)(x)
+    x = activation_fn(x, self.conv_name_base + "_id_act1")
 
-      # First component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv1", self.build_conv1)(X_input)
-      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer1", self.build_normalizer)(x)
-      x = activation_fn(x, self.conv_name_base + "_id_act1")
+    # Second component of main path
+    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv2", self.build_conv2)(x)
+    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer2", self.build_normalizer)(x)
+    x = activation_fn(x, self.conv_name_base + "_id_act2")
 
-      # Second component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv2", self.build_conv2)(x)
-      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer2", self.build_normalizer)(x)
-      x = activation_fn(x, self.conv_name_base + "_id_act2")
+    # Third component of main path
+    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv3", self.build_conv3)(x)
+    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer3", self.build_normalizer)(x)
 
-      # Third component of main path
-      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv3", self.build_conv3)(x)
-      x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer3", self.build_normalizer)(x)
-
-      # Final step: Add shortcut value to main path, and pass it through
-      x = tf.add(x, X_shortcut)
-      x = activation_fn(x, self.conv_name_base + "_id_act3")
+    # Final step: Add shortcut value to main path, and pass it through
+    x = tf.add(x, X_shortcut)
+    x = activation_fn(x, self.conv_name_base + "_id_act3")
 
     return x

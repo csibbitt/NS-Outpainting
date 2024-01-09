@@ -112,10 +112,6 @@ for i in range(num_gpu - 1):
 os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
-
-generator = Generator(args)
-loss = Loss(args)
-
 #tf.config.optimizer.set_jit(True)
 
 print("Start building model...")
@@ -127,40 +123,6 @@ if args.deterministic_seed != 0:
     tf.keras.utils.set_random_seed(1)
     tf.config.experimental.enable_op_determinism()
     tf.random.set_seed(1)
-
-
-def fwd(groundtruth):
-    left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
-
-    reconstruction = generator(left_gt)
-
-    loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
-    loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
-
-    loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + generator.losses
-    loss_D = loss_adv_D
-
-    var_G = generator.trainable_variables
-    var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
-
-    grad_g = G_opt.get_gradients( #** When moving off legacy.Adam this will need to change back to compute_gradients
-        loss_G, var_G)
-    grad_g = zip(grad_g, var_G) #** Required because get_gradients only returns grads but compute_gradients returns grad,var tuples
-    grad_d = D_opt.get_gradients(
-        loss_D, var_D)
-    grad_d = zip(grad_d, var_D)
-
-    return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
-
-
-btimer = Timer('building')
-learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
-lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float32, shape=[])
-
-G_opt = tf.keras.optimizers.legacy.Adam(
-    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
-D_opt = tf.keras.optimizers.legacy.Adam(
-    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
 
 trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
@@ -176,7 +138,17 @@ testset = testset.batch(args.batch_size).repeat()
 
 test_im = iter(testset)
 
-print('Start reducing towers on gpu...')
+learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
+lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float32, shape=[])
+
+
+generator = Generator(args)
+loss = Loss(args)
+
+G_opt = tf.keras.optimizers.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+D_opt = tf.keras.optimizers.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
 iters = 0
 step = tf.Variable(0, dtype=tf.int64, trainable=False)
@@ -186,7 +158,6 @@ ckpt = tf.train.Checkpoint(step=step,
                             generator=generator,
                             discrim_g=loss.discrim_g,
                             discrim_l=loss.discrim_l)
-print('Creating v2 checkpoint manager')
 ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
 
 if args.checkpoint_path is not None:
@@ -194,6 +165,26 @@ if args.checkpoint_path is not None:
     status = ckpt.restore(args.checkpoint_path).assert_consumed()
     iters = step.numpy()
     print('Done.')
+
+def fwd(groundtruth):
+    left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
+
+    reconstruction = generator(left_gt)
+
+    loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
+    loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
+
+    loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + generator.losses
+    loss_D = loss_adv_D
+
+    var_G = generator.trainable_variables
+    var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
+
+    grad_g = G_opt.compute_gradients(loss_G, var_G)
+    grad_d = D_opt.compute_gradients(loss_D, var_D)
+    #grad_d = zip(grad_d, var_D)
+
+    return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
 
 print('Start training...')
 for epoch in range(args.epoch):
@@ -223,7 +214,7 @@ for epoch in range(args.epoch):
                     
             print('Pre-train G Done!')
 
-        lamba_rec.assign(args.lambda_rec)
+        lambda_rec.assign(args.lambda_rec)
 
         if (iters < 25 and args.checkpoint_path is None) or iters % 500 == 0:
             n_cir = 30

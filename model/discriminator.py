@@ -35,10 +35,9 @@ class DiscriminatorGlobal(tf.keras.Model):
     bs = img.get_shape().as_list()[0]
 
     def lrelu(x, leak=0.2, name="lrelu"):
-      with tf.compat.v1.variable_scope(name):
-        f1 = 0.5 * (1 + leak)
-        f2 = 0.5 * (1 - leak)
-        return f1 * x + f2 * abs(x)
+      f1 = 0.5 * (1 + leak)
+      f2 = 0.5 * (1 - leak)
+      return f1 * x + f2 * abs(x)
 
     self.size = 128
     self.activation_fn = lrelu
@@ -90,10 +89,9 @@ class DiscriminatorLocal(tf.keras.Model):
     bs = img.get_shape().as_list()[0]
 
     def lrelu(x, leak=0.2, name="lrelu"):
-      with tf.compat.v1.variable_scope(name):
-        f1 = 0.5 * (1 + leak)
-        f2 = 0.5 * (1 - leak)
-        return f1 * x + f2 * abs(x)
+      f1 = 0.5 * (1 + leak)
+      f2 = 0.5 * (1 - leak)
+      return f1 * x + f2 * abs(x)
 
     self.size = 128
     self.activation_fn = lrelu
