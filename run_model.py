@@ -93,12 +93,12 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
                 right_recons = tf.concat(right_recons, axis=0)
             print('Done.')
 
-            saver = tf.compat.v1.train.Saver(max_to_keep=5)
-            if args.checkpoint_path is None:
-                sess.run(tf.compat.v1.global_variables_initializer())
-            else:
+            ckpt = tf.train.Checkpoint(generator=generator)
+            sess.run(tf.compat.v1.global_variables_initializer())
+
+            if args.checkpoint_path is not None:
                 print('Start loading checkpoint...')
-                saver.restore(sess, args.checkpoint_path)
+                ckpt.restore(args.checkpoint_path) #.assert_existing_objects_matched()
                 print('Done.')
 
             print('run eval...')

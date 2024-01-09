@@ -39,3 +39,6 @@ Iters: 235500 @1.3s = 316,800s (88hrs)
 On 3090@Genesis:
 Epocs: 1500 @64s = 96,000s (26hrs)
 Iters: 235500 @ 0.2s = 47,100 (13hrs)
+
+
+ # --load-v2-checkpoint --checkpoint-path logs/20240108/920/checkpoint/ckpt-25",

@@ -67,6 +67,7 @@ parser.add_argument('--lambda-rec', type=float, default=0.998)
 parser.add_argument('--log-path', type=str, default='./logs/')
 parser.add_argument('--checkpoint-path', type=str, default=None)
 parser.add_argument('--resume-step', type=int, default=0)
+parser.add_argument('--load-v2-checkpoint', action='store_true', default=False)
 
 # determinism
 parser.add_argument('--deterministic-seed', type=int, default=0)
@@ -251,24 +252,24 @@ with tf.compat.v1.Session() as sess:
         else:
             if args.load_v2_checkpoint:
                 print('Start v2 loading checkpoint...')
-                status = ckpt.restore(args.checkpoint_path)
-                status.assert_consumed()
-                iters = step
+                status = ckpt.restore(args.checkpoint_path).assert_consumed()
+                # ** Hack to deal with restoring step.  sess.run(step) always returns 0 even though it shouldn't?
+                # Code will be:
+                #iters = step.numpy()
+                reader = tf.train.load_checkpoint(args.checkpoint_path)
+                iters = reader.get_tensor('step/.ATTRIBUTES/VARIABLE_VALUE')
             else:
                 print('Start v1 loading checkpoint...')
                 saver.restore(sess, args.checkpoint_path)
                 iters = args.resume_step
-            print('Start loading checkpoint...')
-            saver.restore(sess, args.checkpoint_path)
-            iters = args.resume_step
             print('Done.')
 
         print('Start training...')
         for epoch in range(args.epoch):
             etimer = Timer(f'epoch {epoch}')
             if epoch > args.lr_decay_epoch:
-                learning_rate_val = args.base_lr / 10  # ***** This looks like a bug, after loading a checkpoing, lr will be high for some epochs
-                                                       # Would need to save/load epoch in the checkpoint
+                learning_rate_val = args.base_lr / 10  # ***** This looks like a bug, after loading a checkpoint, lr will be high for some epochs
+                                                       # Would need to save/load epoch in the checkpoint. Since lr_decay_epoch is 1000, this is only for the final 1/3
             else:
                 learning_rate_val = args.base_lr
 
@@ -378,15 +379,15 @@ with tf.compat.v1.Session() as sess:
                 d_vals /= n_batchs
                 ag_vals /= n_batchs
 
+                print("=========================================================================")
+                print('loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
+                print("=========================================================================")
+
                 with writer.as_default(step=step):
                     tf.summary.scalar('eval/g', g_vals)
                     tf.summary.scalar('eval/d', d_vals)
                     tf.summary.scalar('eval/ag', ag_vals)
                 sess.run(writer.flush())
-
-                print("=========================================================================")
-                print('loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
-                print("=========================================================================")
 
                 if np.isnan(reconstruction_vals.min()) or np.isnan(reconstruction_vals.max()):
                     print("NaN detected!!")

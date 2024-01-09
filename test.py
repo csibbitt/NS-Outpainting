@@ -104,5 +104,10 @@ from model.loss import Loss
 
 #   print(out) 
 
-for var in tf.compat.v1.train.list_variables('logs/20240108/37/models/-1'):
+
+# reader = tf.train.load_checkpoint('logs/20240108/920/checkpoint/ckpt-25')
+
+# reader.get_tensor('step/.ATTRIBUTES/VARIABLE_VALUE')
+
+for var in tf.train.list_variables('logs/20240108/920/checkpoint/ckpt-25'):
    print(var)
