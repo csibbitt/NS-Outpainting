@@ -42,3 +42,10 @@ Iters: 235500 @ 0.2s = 47,100 (13hrs)
 
 
  # --load-v2-checkpoint --checkpoint-path logs/20240108/920/checkpoint/ckpt-25",
+
+
+
+            lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
+                4 * self.size, activation=activation_fn)
+            lstm_cell = tf.compat.v1.nn.rnn_cell.MultiRNNCell( # WARNING:tensorflow:At least two cells provided to MultiRNNCell are the same object and will share weights.
+                [lstm_cell] * layer_num, state_is_tuple=True)

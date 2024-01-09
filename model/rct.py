@@ -26,12 +26,15 @@ class Rct(tf.keras.layers.Layer):
                     kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
 
+  def build_lstm_stack(self):
+    rnn_cell = tf.keras.layers.LSTMCell(4 * self.size, recurrent_activation=tf.tanh, kernel_initializer=None, recurrent_initializer=None)
+    stacked_lstm = tf.keras.layers.StackedRNNCells([rnn_cell] * 2)  #** Is this a bug in the original code, or do we mean to share weights in both cells?
+    return stacked_lstm
+
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, x):
     self.output_size = x.get_shape().as_list()[3]
     self.size = 512
-    layer_num = 2
-    activation_fn = tf.tanh
     x = tf.compat.v1.keras.utils.get_or_create_layer("rct_conv1", self.build_conv1)(x)
     x = mr.in_lrelu(x, "conv1_act")
     x = tf.transpose(a=x, perm=[0, 2, 1, 3])
@@ -44,22 +47,17 @@ class Rct(tf.keras.layers.Layer):
     ys = []
     with tf.compat.v1.variable_scope('LSTM'):
         with tf.compat.v1.variable_scope('encoder'):
-            lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
-                4 * self.size, activation=activation_fn)
-            lstm_cell = tf.compat.v1.nn.rnn_cell.MultiRNNCell( # WARNING:tensorflow:At least two cells provided to MultiRNNCell are the same object and will share weights.
-                [lstm_cell] * layer_num, state_is_tuple=True)
+            lstm_cell = tf.compat.v1.keras.utils.get_or_create_layer("encoder_lstm", self.build_lstm_stack)
 
-        init_state = lstm_cell.zero_state(self.batch_size_per_gpu, dtype=tf.float32)
+        init_state = lstm_cell.get_initial_state(x_split[0], batch_size=self.batch_size_per_gpu, dtype=tf.float32)
         now, _state = lstm_cell(x_split[0], init_state)
         now, _state = lstm_cell(x_split[1], _state)
         now, _state = lstm_cell(x_split[2], _state)
         now, _state = lstm_cell(x_split[3], _state)
 
         with tf.compat.v1.variable_scope('decoder'):
-            lstm_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(
-                4 * self.size, activation=activation_fn)
-            lstm_cell2 = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
-                [lstm_cell] * layer_num, state_is_tuple=True)
+            lstm_cell2 = tf.compat.v1.keras.utils.get_or_create_layer("decoder_lstm", self.build_lstm_stack)
+
         #predict
         now, _state = lstm_cell2(x_split[3], _state)
         ys.append(tf.reshape(now, [-1, 4, 1, self.size]))

@@ -1,3 +1,5 @@
+Jit disabled
+==
 Iter: 0 loss_g: 0.9398291 loss_d: -13.464857 loss_adv_g: 4.430419
 iter lap taking : 51s
 epoch 0 taking : 64s

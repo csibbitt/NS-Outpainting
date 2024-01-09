@@ -116,7 +116,7 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 generator = Generator(args)
 loss = Loss(args)
 
-tf.config.optimizer.set_jit(True)
+#tf.config.optimizer.set_jit(True)
 
 print("Start building model...")
 with tf.compat.v1.Session() as sess:
