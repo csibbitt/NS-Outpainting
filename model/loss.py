@@ -24,6 +24,7 @@ class Loss():
         loss_recon = tf.reduce_mean(input_tensor=loss_recon)
         return loss_recon
 
+    @tf.function
     def adversarial_loss(self, dis_fun, real, fake):
         adversarial_pos = dis_fun(real)
         adversarial_neg = dis_fun(fake)

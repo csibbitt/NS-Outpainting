@@ -57,97 +57,95 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
 
     print("Start building model...")
     with tf.device('/cpu:0'):
-        with tf.name_scope('tower_0'):
-            with tf.compat.v1.variable_scope('cpu_variables'):
 
-                testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-                testset = testset.map(parse_testset, num_parallel_calls=args.workers)
-                testset = testset.batch(args.batch_size).repeat()
-                testset_iter = iter(testset)
+        testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
+        testset = testset.map(parse_testset, num_parallel_calls=args.workers)
+        testset = testset.batch(args.batch_size).repeat()
+        testset_iter = iter(testset)
 
-                print('build model on gpu tower')
-                # models = []
-                # params = []
-                # for gpu_id in range(num_gpu):
-                #     with tf.device('/gpu:%d' % gpu_id):
-                #         print('tower_%d' % gpu_id)
-                #         with tf.name_scope('tower_%d' % gpu_id):
-                #             with tf.compat.v1.variable_scope('cpu_variables', reuse=gpu_id > 0):
+        print('build model on gpu tower')
+        # models = []
+        # params = []
+        # for gpu_id in range(num_gpu):
+        #     with tf.device('/gpu:%d' % gpu_id):
+        #         print('tower_%d' % gpu_id)
+        #         with tf.name_scope('tower_%d' % gpu_id):
+        #             with tf.compat.v1.variable_scope('cpu_variables', reuse=gpu_id > 0):
 
-                #                 groundtruth = tf.compat.v1.placeholder(
-                #                     tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
-                #                 left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
+        #                 groundtruth = tf.compat.v1.placeholder(
+        #                     tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
+        #                 left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                #                 reconstruction = generator(left_gt)
-                #                 right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
+        #                 reconstruction = generator(left_gt)
+        #                 right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                #                 models.append((reconstruction, right_recon))
-                #                 params.append(groundtruth)
-                # print('Done.')
+        #                 models.append((reconstruction, right_recon))
+        #                 params.append(groundtruth)
+        # print('Done.')
 
-                # print('Start reducing towers on cpu...')
-                # reconstructions, right_recons = zip(*models)
-                # with tf.device('/gpu:0'):
-                #     reconstructions = tf.concat(reconstructions, axis=0)
-                #     right_recons = tf.concat(right_recons, axis=0)
-                # print('Done.')
+        # print('Start reducing towers on cpu...')
+        # reconstructions, right_recons = zip(*models)
+        # with tf.device('/gpu:0'):
+        #     reconstructions = tf.concat(reconstructions, axis=0)
+        #     right_recons = tf.concat(right_recons, axis=0)
+        # print('Done.')
 
-                ckpt = tf.train.Checkpoint(generator=generator)
-                if args.checkpoint_path is not None:
-                    print('Start loading checkpoint...')
-                    ckpt.restore(args.checkpoint_path).assert_existing_objects_matched()
-                    print('Done.')
+        ckpt = tf.train.Checkpoint(generator=generator)
+        if args.checkpoint_path is not None:
+            print('Start loading checkpoint...')
+            ckpt.restore(args.checkpoint_path).assert_existing_objects_matched()
+            print('Done.')
 
-                print('run eval...')
-                stitch_mask1 = np.ones((args.batch_size, 128, 128, 3))
-                for i in range(128):
-                    stitch_mask1[:, :, i, :] = 1. / 127. * (127. - i)
-                stitch_mask2 = stitch_mask1[:, :, ::-1, :]
+        print('run eval...')
+        stitch_mask1 = np.ones((args.batch_size, 128, 128, 3))
+        for i in range(128):
+            stitch_mask1[:, :, i, :] = 1. / 127. * (127. - i)
+        stitch_mask2 = stitch_mask1[:, :, ::-1, :]
 
-                while True:
-                    if len(input_images) == 0:
-                        test_oris = testset_iter.get_next()
-                        seed_hash.set('t_' + input_hasher(test_oris))
-                    else:
-                        # Combo from build_dataset and train_model
-                        image_bytes =  input_images[0].tobytes()
-                        features = {'image': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_bytes]))}
-                        tf_features = tf.train.Features(feature=features)
-                        tf_example = tf.train.Example(features=tf_features)
-                        input_image_tensor = parse_testset(tf_example.SerializeToString(), shape=[1, 128, 128, 3])
-                        input_image_tensor = tf.concat((input_image_tensor, tf.zeros([1, 128, 128, 3])), axis=2)
-                        test_oris = input_image_tensor
-                    origins1 = tf.identity(test_oris)
+        while True:
+            if len(input_images) == 0:
+                test_oris = testset_iter.get_next()
+                seed_hash.set('t_' + input_hasher(test_oris))
+            else:
+                # Combo from build_dataset and train_model
+                image_bytes =  input_images[0].tobytes()
+                features = {'image': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_bytes]))}
+                tf_features = tf.train.Features(feature=features)
+                tf_example = tf.train.Example(features=tf_features)
+                input_image_tensor = parse_testset(tf_example.SerializeToString(), shape=[1, 128, 128, 3])
+                input_image_tensor = tf.concat((input_image_tensor, tf.zeros([1, 128, 128, 3])), axis=2)
+                test_oris = input_image_tensor
+            origins1 = tf.identity(test_oris)
 
-                    oris = None
-                    while not shuffle_flag.get():
-                        with tf.device('/gpu:0'):
-                            reconstruction_vals = generator(tf.slice(test_oris, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3]))  #** This is silly since we add zeros on loaded images. Just chop the testset image instead
-                        prediction_vals = tf.slice(reconstruction_vals, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
+            oris = None
+            while not shuffle_flag.get():
+                with tf.device('/gpu:0'):
+                    reconstruction_vals = generator(tf.slice(test_oris, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3]))  #** This is silly since we add zeros on loaded images. Just chop the testset image instead
+                prediction_vals = tf.slice(reconstruction_vals, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                        if oris is None:
-                            oris = reconstruction_vals
-                            pred1 = oris[:, :, :128, :]
-                            pred2 = oris[:, :, -128:, :]
-                            gt = origins1[:, :, :128, :]
-                            p1_m1 = np.concatenate((gt * stitch_mask1 + pred1 * stitch_mask2, pred2), axis=2)
-                            img_callback(Image.fromarray((255. * (p1_m1[0] + 1) / 2.).astype(np.uint8)))
-                            prediction_count = 2
-                        else:
-                            A = oris[:, :, -128:, :]
-                            B = reconstruction_vals[:, :, :128, :]
-                            C = A * stitch_mask1 + B * stitch_mask2
-                            patch_count = np.shape(oris)[2] / 128
-                            start_column = 128 if patch_count >= buffer_size.get() else 0
-                            oris = np.concatenate((oris[:, :, start_column:-128, :], C, prediction_vals), axis=2)
-                            img_callback(Image.fromarray((255. * (oris[0] + 1) / 2.).astype(np.uint8)))
-                            prediction_count += 1
+                if oris is None:
+                    oris = reconstruction_vals
+                    pred1 = oris[:, :, :128, :]
+                    pred2 = oris[:, :, -128:, :]
+                    gt = origins1[:, :, :128, :]
+                    p1_m1 = np.concatenate((gt * stitch_mask1 + pred1 * stitch_mask2, pred2), axis=2)
+                    img_callback(Image.fromarray((255. * (p1_m1[0] + 1) / 2.).astype(np.uint8)))
+                    prediction_count = 2
+                else:
+                    A = oris[:, :, -128:, :]
+                    B = reconstruction_vals[:, :, :128, :]
+                    C = A * stitch_mask1 + B * stitch_mask2
+                    patch_count = np.shape(oris)[2] / 128
+                    start_column = 128 if patch_count >= buffer_size.get() else 0
+                    oris = np.concatenate((oris[:, :, start_column:-128, :], C, prediction_vals), axis=2)
+                    img_callback(Image.fromarray((255. * (oris[0] + 1) / 2.).astype(np.uint8)))
+                    prediction_count += 1
 
-                        # Mix in original image to add style stability
-                        ms = mix_strength.get() / 100
-                        test_oris = np.concatenate(((prediction_vals +  ms * gt)/ (1 + ms), prediction_vals), axis=2)
+                # Mix in original image to add style stability
+                ms = mix_strength.get() / 100
+                test_oris = np.concatenate(((prediction_vals +  ms * gt)/ (1 + ms), prediction_vals), axis=2)
 
-                    shuffle_flag.set(False)
+            shuffle_flag.set(False)
 
 def mainSessionMock(buffer_size, img_callback, shuffle_flag, input_images, seed_hash, mix_strength):
     eval_width = 128

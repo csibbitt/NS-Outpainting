@@ -119,278 +119,194 @@ loss = Loss(args)
 #tf.config.optimizer.set_jit(True)
 
 print("Start building model...")
-with tf.compat.v1.Session() as sess:
+writer = tf.summary.create_file_writer(tensorboard_path)
+writer.init()
 
-    writer = tf.summary.create_file_writer(tensorboard_path)
-    sess.run(writer.init())
-
-    if args.deterministic_seed != 0:
-        tf.compat.v1.random.set_random_seed(1)
-        tf.keras.utils.set_random_seed(1)
-        tf.config.experimental.enable_op_determinism()
-        tf.random.set_seed(1)
-
-    with tf.device('/cpu:0'):
-
-        btimer = Timer('building')
-        learning_rate = tf.compat.v1.placeholder(tf.float32, [])
-        lambda_rec = tf.compat.v1.placeholder(tf.float32, [])
-
-        G_opt = tf.keras.optimizers.legacy.Adam(
-            learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
-        D_opt = tf.keras.optimizers.legacy.Adam(
-            learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+if args.deterministic_seed != 0:
+    tf.compat.v1.random.set_random_seed(1)
+    tf.keras.utils.set_random_seed(1)
+    tf.config.experimental.enable_op_determinism()
+    tf.random.set_seed(1)
 
 
-        trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
-        trainset = trainset.shuffle(args.trainset_length)
-        trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
-        trainset = trainset.batch(args.batch_size).repeat()
+def fwd(groundtruth):
+    left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-        train_iterator = tf.compat.v1.data.make_one_shot_iterator(trainset) #**
-        train_im = train_iterator.get_next()
+    reconstruction = generator(left_gt)
 
-        testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-        testset = testset.map(parse_testset, num_parallel_calls=args.workers)
-        testset = testset.batch(args.batch_size).repeat()
+    loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
+    loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
 
-        test_iterator = tf.compat.v1.data.make_one_shot_iterator(testset) #**
-        test_im = test_iterator.get_next()
+    loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + generator.losses
+    loss_D = loss_adv_D
 
-        print('build model on gpu tower')
-        models = []
-        params = []
-        for gpu_id in range(num_gpu):
-            with tf.device('/gpu:%d' % gpu_id):
-                print('tower_%d' % gpu_id)
-                with tf.name_scope('tower_%d' % gpu_id):
-                    with tf.compat.v1.variable_scope('cpu_variables', reuse=gpu_id > 0):
+    var_G = generator.trainable_variables
+    var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
 
-                        groundtruth = tf.compat.v1.placeholder(
-                            tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
-                        left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
+    grad_g = G_opt.get_gradients( #** When moving off legacy.Adam this will need to change back to compute_gradients
+        loss_G, var_G)
+    grad_g = zip(grad_g, var_G) #** Required because get_gradients only returns grads but compute_gradients returns grad,var tuples
+    grad_d = D_opt.get_gradients(
+        loss_D, var_D)
+    grad_d = zip(grad_d, var_D)
 
-                        reconstruction = generator(left_gt)
+    return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
 
-                        right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
 
-                        loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)
-                        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
+btimer = Timer('building')
+learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
+lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float32, shape=[])
 
-                        #***** This is broken, always returns an empty collection
-                        # reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
-                        # Suspect regularization penalties are nerfed - or does TF2 apply them automatically at each layer? (doubt)
-                        # Line should be this; and early visual results seem okay:
-                        reg_losses = generator.losses
-                        # The old code was finding 99 tensors, but the new code finds 201. Hmmm....
-                        #*****
+G_opt = tf.keras.optimizers.legacy.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+D_opt = tf.keras.optimizers.legacy.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
-                        loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + sum(reg_losses)
-                        loss_D = loss_adv_D
 
-                        var_G = generator.trainable_variables
-                        var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
+trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
+trainset = trainset.shuffle(args.trainset_length)
+trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
+trainset = trainset.batch(args.batch_size).repeat()
 
-                        grad_g = G_opt.get_gradients( #** When moving off legacy.Adam this will need to change back to compute_gradients
-                            loss_G, var_G)
-                        grad_g = zip(grad_g, var_G) #** Required because get_gradients only returns grads but compute_gradients returns grad,var tuples
-                        grad_d = D_opt.get_gradients(
-                            loss_D, var_D)
-                        grad_d = zip(grad_d, var_D)
+train_im = iter(trainset)
 
-                        models.append((grad_g, grad_d, loss_G, loss_D, loss_adv_G, loss_rec, reconstruction))
-                        params.append(groundtruth)
+testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
+testset = testset.map(parse_testset, num_parallel_calls=args.workers)
+testset = testset.batch(args.batch_size).repeat()
 
-        print('Done.')
-        btimer.stop()
-        generator.summary()
+test_im = iter(testset)
 
-        print('Start reducing towers on gpu...')
+print('Start reducing towers on gpu...')
 
-        grad_gs, grad_ds, loss_Gs, loss_Ds, loss_adv_Gs, loss_recs, reconstructions = zip(*models)
-        groundtruths = params
+iters = 0
+step = tf.Variable(0, dtype=tf.int64, trainable=False)
+ckpt = tf.train.Checkpoint(step=step,
+                            G_opt=G_opt,
+                            D_opt=D_opt,
+                            generator=generator,
+                            discrim_g=loss.discrim_g,
+                            discrim_l=loss.discrim_l)
+print('Creating v2 checkpoint manager')
+ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
 
-        iters = 0
-        step = tf.Variable(0, dtype=tf.int64, trainable=False)
-        with tf.device('/gpu:0'):
+if args.checkpoint_path is not None:
+    print('Start restore checkpoint...')
+    status = ckpt.restore(args.checkpoint_path).assert_consumed()
+    iters = step.numpy()
+    print('Done.')
 
-            aver_loss_g = tf.reduce_mean(input_tensor=loss_Gs)
-            aver_loss_d = tf.reduce_mean(input_tensor=loss_Ds)
-            aver_loss_ag = tf.reduce_mean(input_tensor=loss_adv_Gs)
-            aver_loss_rec = tf.reduce_mean(input_tensor=loss_recs)
+print('Start training...')
+for epoch in range(args.epoch):
+    etimer = Timer(f'epoch {epoch}')
+    if epoch > args.lr_decay_epoch:
+        learning_rate.assign(args.base_lr / 10)  # ***** This looks like a bug, after loading a checkpoint, lr will be high for some epochs
+                                                 # Would need to save/load epoch in the checkpoint. Since lr_decay_epoch is 1000, this is only for the final 1/3
 
-            train_op_G = G_opt.apply_gradients(
-                loss.average_gradients(grad_gs), experimental_aggregate_gradients=False) #** skip_gradients_aggregation=True when moving off legacy (unless I sort out the gradient averaging since it defaults to a sum)
-            train_op_D = D_opt.apply_gradients(
-                loss.average_gradients(grad_ds), experimental_aggregate_gradients=False)
+    itimer = Timer('iter')
+    for start, end in zip(
+            range(0, args.trainset_length, args.batch_size),
+            range(args.batch_size, args.trainset_length, args.batch_size)):
 
-            groundtruths = tf.concat(groundtruths, axis=0)
-            reconstructions = tf.concat(reconstructions, axis=0)
+        if iters == 0 and args.checkpoint_path is None:
+            print('Start pretraining G!')
+            lambda_rec.assign(1.)
+            for t in range(args.warmup_steps):
+                if t % 20 == 0:
+                    print("Step:", t)
+                images = train_im.get_next()
+                if len(images) < args.batch_size:
+                    images =  train_im.get_next()
 
-            with writer.as_default(step=step):
-                tf.summary.scalar('loss_g', aver_loss_g)
-                tf.summary.scalar('loss_d', aver_loss_d)
-                tf.summary.scalar('loss_ag', aver_loss_ag)
-                tf.summary.scalar('loss_rec', aver_loss_rec)
-                tf.summary.image('groundtruth', tf.dtypes.cast(((groundtruths + 1) * 255. / 2.), tf.uint8), max_outputs=2)
-                tf.summary.image('reconstruction', tf.dtypes.cast(((reconstructions + 1) * 255. / 2.), tf.uint8), max_outputs=2)
+                loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
+                G_opt.apply_gradients(grad_g)
 
-        print('Done.')
+                    
+            print('Pre-train G Done!')
 
-        ckpt = tf.train.Checkpoint(step=step,
-                                   G_opt=G_opt,
-                                   D_opt=D_opt,
-                                   generator=generator,
-                                   discrim_g=loss.discrim_g,
-                                   discrim_l=loss.discrim_l)
-        print('Creating v2 checkpoint manager')
-        ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
-        saver = tf.compat.v1.train.Saver(max_to_keep=3) # *****
+        lamba_rec.assign(args.lambda_rec)
 
-        if args.checkpoint_path is None:
-            sess.run(tf.compat.v1.global_variables_initializer())
+        if (iters < 25 and args.checkpoint_path is None) or iters % 500 == 0:
+            n_cir = 30
         else:
-            if args.load_v2_checkpoint:
-                print('Start v2 loading checkpoint...')
-                status = ckpt.restore(args.checkpoint_path).assert_consumed()
-                # ** Hack to deal with restoring step.  sess.run(step) always returns 0 even though it shouldn't?
-                # Code will be:
-                #iters = step.numpy()
-                reader = tf.train.load_checkpoint(args.checkpoint_path)
-                iters = reader.get_tensor('step/.ATTRIBUTES/VARIABLE_VALUE')
-            else:
-                print('Start v1 loading checkpoint...')
-                saver.restore(sess, args.checkpoint_path)
-                iters = args.resume_step
-            print('Done.')
+            n_cir = args.critic_steps
 
-        print('Start training...')
-        for epoch in range(args.epoch):
-            etimer = Timer(f'epoch {epoch}')
-            if epoch > args.lr_decay_epoch:
-                learning_rate_val = args.base_lr / 10  # ***** This looks like a bug, after loading a checkpoint, lr will be high for some epochs
-                                                       # Would need to save/load epoch in the checkpoint. Since lr_decay_epoch is 1000, this is only for the final 1/3
-            else:
-                learning_rate_val = args.base_lr
+        for t in range(n_cir):
+            images =  train_im.get_next()
+            if len(images) < args.batch_size:
+                images =  train_im.get_next()
+            loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
+            D_opt.apply_gradients(grad_d)
 
-            itimer = Timer('iter')
-            for start, end in zip(
-                    range(0, args.trainset_length, args.batch_size),
-                    range(args.batch_size, args.trainset_length, args.batch_size)):
+        loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
+        G_opt.apply_gradients(grad_g)
 
-                if iters == 0 and args.checkpoint_path is None:
-                    print('Start pretraining G!')
-                    for t in range(args.warmup_steps):
-                        if t % 20 == 0:
-                            print("Step:", t)
-                        images = sess.run([train_im])[0]
-                        if len(images) < args.batch_size:
-                            images = sess.run([train_im])[0]
+        if iters % 50 == 0:
+            with writer.as_default(step=step):
+                tf.summary.scalar('loss_g', loss_G)
+                tf.summary.scalar('loss_d', loss_D)
+                tf.summary.scalar('loss_ag', loss_adv_G)
+                tf.summary.scalar('loss_rec', loss_rec)
+                tf.summary.image('groundtruth', tf.dtypes.cast(((images + 1) * 255. / 2.), tf.uint8), max_outputs=2)
+                tf.summary.image('reconstruction', tf.dtypes.cast(((reconstruction + 1) * 255. / 2.), tf.uint8), max_outputs=2)
+            writer.flush()
 
-                        inp_dict = {}
-                        inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, images, params)
-                        inp_dict[learning_rate] = learning_rate_val
-                        inp_dict[lambda_rec] = 1.
-
-                        _ = sess.run(
-                            [train_op_G],
-                            feed_dict=inp_dict)
-                    print('Pre-train G Done!')
-
-                if (iters < 25 and args.checkpoint_path is None) or iters % 500 == 0:
-                    n_cir = 30
-                else:
-                    n_cir = args.critic_steps
-
-                for t in range(n_cir):
-                    images = sess.run([train_im])[0]
-                    if len(images) < args.batch_size:
-                        images = sess.run([train_im])[0]
-
-                    inp_dict = {}
-                    inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, images, params)
-                    inp_dict[learning_rate] = learning_rate_val
-                    inp_dict[lambda_rec] = args.lambda_rec
-
-                    _ = sess.run(
-                        [train_op_D],
-                        feed_dict=inp_dict)
-
-                if iters % 50 == 0:
-
-                    _, g_val, ag_val, d_val, _ = sess.run(
-                        [train_op_G, aver_loss_g, aver_loss_ag, aver_loss_d, tf.compat.v1.summary.all_v2_summary_ops()],
-                        feed_dict=inp_dict)
-                    sess.run(writer.flush())
-                else:
-
-                    _, g_val, ag_val, d_val = sess.run(
-                        [train_op_G, aver_loss_g, aver_loss_ag, aver_loss_d],
-                        feed_dict=inp_dict)
-                if iters % 20 == 0:
-                    print("Iter:", iters, 'loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
-                    itimer.lap()
-                iters += 1
-                sess.run(step.assign(iters))
-            ckpt_manager.save()
+        if iters % 25 == 0:
+            print("Iter:", iters, 'loss_g:', loss_G, 'loss_d:', loss_D, 'loss_adv_g:', loss_adv_G, 'loss_rec:', loss_rec)
+            itimer.lap()
+        iters += 1
+        step.assign_add(1)
+    ckpt_manager.save()
 
 
-            # testing
-            if epoch > 0:
-                ii = 0
-                g_vals = 0
-                d_vals = 0
-                ag_vals = 0
-                n_batchs = 0
-                for _ in range(int(args.testset_length / args.batch_size)):
-                    test_oris = sess.run([test_im])[0]
-                    if len(test_oris) < args.batch_size:
-                        test_oris = sess.run([test_im])[0]
+    # testing
+    if epoch > 0:
+        ii = 0
+        g_vals = 0
+        d_vals = 0
+        ag_vals = 0
+        n_batchs = 0
+        for _ in range(int(args.testset_length / args.batch_size)):
+            test_oris = test_im.get_next()
+            if len(test_oris) < args.batch_size:
+                test_oris = test_im.get_next()
 
-                    inp_dict = {}
-                    inp_dict = loss.feed_all_gpu(inp_dict, args.num_gpu, args.batch_size_per_gpu, test_oris, params)
-                    inp_dict[learning_rate] = learning_rate_val
-                    inp_dict[lambda_rec] = args.lambda_rec
+            g_val, ag_val, d_val, loss_rec, grad_g, grad_d, reconstruction_vals = fwd(test_oris)
 
-                    reconstruction_vals, g_val, d_val, ag_val = sess.run(
-                        [reconstruction, aver_loss_g, aver_loss_d, aver_loss_ag],
-                        feed_dict=inp_dict)
+            g_vals += g_val
+            d_vals += d_val
+            ag_vals += ag_val
+            n_batchs += 1
 
-                    g_vals += g_val
-                    d_vals += d_val
-                    ag_vals += ag_val
-                    n_batchs += 1
+            # Save test results
+            if epoch % 100 == 0:
 
-                    # Save test results
-                    if epoch % 100 == 0:
+                for rec_val, test_ori in zip(reconstruction_vals, test_oris):
+                    rec_hid = (255. * (rec_val + 1) /
+                                2.).astype(np.uint8)
+                    test_ori = (255. * (test_ori + 1) /
+                                2.).astype(np.uint8)
+                    Image.fromarray(rec_hid).save(os.path.join(
+                        result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.jpg'))
+                    if epoch == 0:
+                        Image.fromarray(test_ori).save(
+                            os.path.join(result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.ori.jpg'))
+                    ii += 1
+        g_vals /= n_batchs
+        d_vals /= n_batchs
+        ag_vals /= n_batchs
 
-                        for rec_val, test_ori in zip(reconstruction_vals, test_oris):
-                            rec_hid = (255. * (rec_val + 1) /
-                                       2.).astype(np.uint8)
-                            test_ori = (255. * (test_ori + 1) /
-                                       2.).astype(np.uint8)
-                            Image.fromarray(rec_hid).save(os.path.join(
-                                result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.jpg'))
-                            if epoch == 0:
-                                Image.fromarray(test_ori).save(
-                                    os.path.join(result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.ori.jpg'))
-                            ii += 1
-                g_vals /= n_batchs
-                d_vals /= n_batchs
-                ag_vals /= n_batchs
+        print("=========================================================================")
+        print('loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
+        print("=========================================================================")
 
-                print("=========================================================================")
-                print('loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
-                print("=========================================================================")
+        with writer.as_default(step=step):
+            tf.summary.scalar('eval/g', g_vals)
+            tf.summary.scalar('eval/d', d_vals)
+            tf.summary.scalar('eval/ag', ag_vals)
+        writer.flush()
 
-                with writer.as_default(step=step):
-                    tf.summary.scalar('eval/g', g_vals)
-                    tf.summary.scalar('eval/d', d_vals)
-                    tf.summary.scalar('eval/ag', ag_vals)
-                sess.run(writer.flush())
-
-                if np.isnan(reconstruction_vals.min()) or np.isnan(reconstruction_vals.max()):
-                    print("NaN detected!!")
-            etimer.stop()
+        if np.isnan(reconstruction_vals.min()) or np.isnan(reconstruction_vals.max()):
+            print("NaN detected!!")
+    etimer.stop()
 
 #cProfile.run('main()')
