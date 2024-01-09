@@ -109,7 +109,6 @@ start_gpu = args.start_gpu
 gpu_id = str(start_gpu)
 for i in range(num_gpu - 1):
     gpu_id = gpu_id + ',' + str(start_gpu + i + 1)
-os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
 #tf.config.optimizer.set_jit(True)
@@ -167,21 +166,24 @@ if args.checkpoint_path is not None:
     print('Done.')
 
 def fwd(groundtruth):
-    left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
+    with tf.GradientTape() as g_G, tf.GradientTape() as g_D:
+        g_G.watch(groundtruth)
+        g_D.watch(groundtruth)
 
-    reconstruction = generator(left_gt)
+        left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
+        reconstruction = generator(left_gt)
 
-    loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
-    loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
+        loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
+        loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction)
 
-    loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + generator.losses
-    loss_D = loss_adv_D
+        loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + tf.reduce_sum(generator.losses)
+        loss_D = loss_adv_D
 
-    var_G = generator.trainable_variables
-    var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
+        var_G = generator.trainable_variables
+        var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
 
-    grad_g = G_opt.compute_gradients(loss_G, var_G)
-    grad_d = D_opt.compute_gradients(loss_D, var_D)
+    grad_g = G_opt.compute_gradients(loss_G, var_G, tape=g_G)
+    grad_d = D_opt.compute_gradients(loss_D, var_D, tape=g_D)
     #grad_d = zip(grad_d, var_D)
 
     return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
@@ -211,7 +213,7 @@ for epoch in range(args.epoch):
                 loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
                 G_opt.apply_gradients(grad_g)
 
-                    
+
             print('Pre-train G Done!')
 
         lambda_rec.assign(args.lambda_rec)
@@ -231,19 +233,20 @@ for epoch in range(args.epoch):
         loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
         G_opt.apply_gradients(grad_g)
 
+        if iters % 25 == 0:
+            print("Iter:", iters, 'loss_g:', loss_G.numpy(), 'loss_d:', loss_D.numpy(), 'loss_adv_g:', loss_adv_G.numpy(), 'loss_rec:', loss_rec.numpy())
+            itimer.lap()
+
         if iters % 50 == 0:
             with writer.as_default(step=step):
-                tf.summary.scalar('loss_g', loss_G)
-                tf.summary.scalar('loss_d', loss_D)
-                tf.summary.scalar('loss_ag', loss_adv_G)
-                tf.summary.scalar('loss_rec', loss_rec)
+                tf.summary.scalar('loss/g', loss_G)
+                tf.summary.scalar('loss/d', loss_D)
+                tf.summary.scalar('loss/ag', loss_adv_G)
+                tf.summary.scalar('loss/rec', loss_rec)
                 tf.summary.image('groundtruth', tf.dtypes.cast(((images + 1) * 255. / 2.), tf.uint8), max_outputs=2)
                 tf.summary.image('reconstruction', tf.dtypes.cast(((reconstruction + 1) * 255. / 2.), tf.uint8), max_outputs=2)
             writer.flush()
 
-        if iters % 25 == 0:
-            print("Iter:", iters, 'loss_g:', loss_G, 'loss_d:', loss_D, 'loss_adv_g:', loss_adv_G, 'loss_rec:', loss_rec)
-            itimer.lap()
         iters += 1
         step.assign_add(1)
     ckpt_manager.save()
@@ -296,7 +299,7 @@ for epoch in range(args.epoch):
             tf.summary.scalar('eval/ag', ag_vals)
         writer.flush()
 
-        if np.isnan(reconstruction_vals.min()) or np.isnan(reconstruction_vals.max()):
+        if np.isnan(g_val):
             print("NaN detected!!")
     etimer.stop()
 
