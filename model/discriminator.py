@@ -2,33 +2,29 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 
 
-def build_normalizer():
-  return tfa.layers.InstanceNormalization()
-
 class DiscriminatorGlobal(tf.keras.Model):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def build_adversarial_global_conv1(self):
-    return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
+    self.conv_1 = tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same')
-
-  def build_adversarial_global_conv2(self):
-    return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4, kernel_initializer=None,
+    
+    self.conv_2 = tf.keras.layers.Conv2D(filters=self.size, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_2 = tfa.layers.InstanceNormalization()
 
-  def build_adversarial_global_conv3(self):
-    return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
+    self.conv_3 = tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_3 = tfa.layers.InstanceNormalization()
 
-  def build_adversarial_global_conv4(self):
-    return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4, kernel_initializer=None,
+    self.conv_4 = tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_4 = tfa.layers.InstanceNormalization()
 
-  def build_adversarial_global_conv5(self):
-    return tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4, kernel_initializer=None,
+    self.conv_5 = tf.keras.layers.Conv2D(filters=self.size * 4, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_5 = tfa.layers.InstanceNormalization()
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, img, name='DIS'):
@@ -42,19 +38,19 @@ class DiscriminatorGlobal(tf.keras.Model):
     self.size = 128
     self.activation_fn = lrelu
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_conv1_" + name, self.build_adversarial_global_conv1)(img)
+    img = self.conv_1(img)
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_conv2_" + name, self.build_adversarial_global_conv2)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_norm2_" + name, build_normalizer)(img)
+    img = self.conv_2(img)
+    img = self.norm_2(img)
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_conv3_" + name, self.build_adversarial_global_conv3)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_norm3_" + name, build_normalizer)(img)
+    img = self.conv_3(img)
+    img = self.norm_3(img)
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_conv4_" + name, self.build_adversarial_global_conv4)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_norm4_" + name, build_normalizer)(img)
+    img = self.conv_4(img)
+    img = self.norm_4(img)
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_conv5_" + name, self.build_adversarial_global_conv5)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_global_norm5_" + name, build_normalizer)(img)
+    img = self.conv_5(img)
+    img = self.norm_5(img)
 
     logit = tf.compat.v1.layers.dense(tf.reshape(
         img, [bs, -1]), 1, activation=None, name=name+"/dense")
@@ -67,21 +63,22 @@ class DiscriminatorLocal(tf.keras.Model):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def build_adversarial_local_conv1(self):
-      return tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
+    self.conv_1 = tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same')
-
-  def build_adversarial_local_conv2(self):
-      return tf.keras.layers.Conv2D(filters=self.size, kernel_size=4, kernel_initializer=None,
+    
+    self.conv_2 = tf.keras.layers.Conv2D(filters=self.size, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_2 = tfa.layers.InstanceNormalization()
 
-  def build_adversarial_local_conv3(self):
-      return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
+    self.conv_3 = tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_3 = tfa.layers.InstanceNormalization()
 
-  def build_adversarial_local_conv4(self):
-      return tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
+    self.conv_4 = tf.keras.layers.Conv2D(filters=self.size * 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
+    self.norm_4 = tfa.layers.InstanceNormalization()
+
+    self.dense = tf.keras.layers.Dense(1, activation=None, kernel_initializer=None)
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, img, name='DIS2'):
@@ -96,19 +93,18 @@ class DiscriminatorLocal(tf.keras.Model):
     self.size = 128
     self.activation_fn = lrelu
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_conv1_" + name, self.build_adversarial_local_conv1)(img)
+    img = self.conv_1(img)
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_conv2_" + name, self.build_adversarial_local_conv2)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_norm2_" + name, build_normalizer)(img)
+    img = self.conv_2(img)
+    img = self.norm_2(img)
+    
+    img = self.conv_3(img)
+    img = self.norm_3(img)
+    
+    img = self.conv_4(img)
+    img = self.norm_4(img)
 
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_conv3_" + name, self.build_adversarial_local_conv3)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_norm3_" + name, build_normalizer)(img)
-
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_conv4_" + name, self.build_adversarial_local_conv4)(img)
-    img = tf.compat.v1.keras.utils.get_or_create_layer("adversarial_local_norm4_" + name, build_normalizer)(img)
-
-    logit = tf.compat.v1.layers.dense(tf.reshape(
-        img, [bs, -1]), 1, activation=None, name=name+"/dense")
+    logit = self.dense(tf.reshape(img, [bs, -1]))
 
     return logit
 

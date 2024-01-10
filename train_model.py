@@ -302,7 +302,7 @@ for epoch in range(args.epoch):
         ag_vals /= n_batchs
 
         print("=========================================================================")
-        print('loss_g:', g_val, 'loss_d:', d_val, 'loss_adv_g:', ag_val)
+        print('loss_g:', g_val.numpy(), 'loss_d:', d_val.numpy(), 'loss_adv_g:', ag_val.numpy())
         print("=========================================================================")
 
         with writer.as_default(step=step):

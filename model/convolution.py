@@ -13,36 +13,29 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
     self.initializer = tf.keras.initializers.GlorotNormal()
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
-  def build_normalizer(self):
-    return tfa.layers.InstanceNormalization()
-
-  def build_conv1(self):
-    return tf.keras.layers.Conv2D(self.filter1,
+    self.conv_2a = tf.keras.layers.Conv2D(self.filter1,
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
-                                 name=self.conv_name_base + '2a',
                                  kernel_regularizer=self.regularizer,
-                                 kernel_initializer=self.initializer, use_bias=False, padding='same')
+                                 kernel_initializer=self.initializer, use_bias=False, padding='same') #** Original code had no padding here?
+    self.norm_2a = tfa.layers.InstanceNormalization()
 
-  def build_conv2(self):
-    return tf.keras.layers.Conv2D(self.filter2,
+    self.conv_2b = tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size), strides=(self.stride, self.stride), 
-                                name=self.conv_name_base +'2b',
                                 padding='same', kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
+    self.norm_2b = tfa.layers.InstanceNormalization()
 
-  def build_conv3(self):
-    return tf.keras.layers.Conv2D(self.filter3, (1, 1),
-                                name=self.conv_name_base + '2c',
+    self.conv_2c = tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
+    self.norm_2c = tfa.layers.InstanceNormalization()
 
-  def build_conv_short(self):
-    return tf.keras.layers.Conv2D(self.filter3, (1, 1),
+    self.conv_sc = tf.keras.layers.Conv2D(self.filter3, (1, 1),
                                 strides=(self.stride, self.stride),
-                                name=self.conv_name_base + '1',
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
+    self.norm_sc = tfa.layers.InstanceNormalization()
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, X_input, kernel_size, filters, stage, block, stride=2, is_relu=False):
@@ -61,23 +54,20 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
 
     X_shortcut = X_input
 
-    # First component of main path
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv2a", self.build_conv1)(X_input)
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer2a", self.build_normalizer)(x)
+    x = self.conv_2a(X_input)
+    x = self.norm_2a(x)
     x = activation_fn(x)
 
-    # Second component of main path
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv2b", self.build_conv2)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer2b", self.build_normalizer)(x)
+    x = self.conv_2b(x)
+    x = self.norm_2b(x)
     x = activation_fn(x)
 
-    # Third component of main path
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv2c", self.build_conv3)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer2c", self.build_normalizer)(x)
+    x = self.conv_2c(x)
+    x = self.norm_2c(x)
 
     # SHORTCUT PATH
-    X_shortcut = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_conv1", self.build_conv_short)(X_shortcut)
-    X_shortcut = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_conv_nomalizer1", self.build_normalizer)(X_shortcut)
+    X_shortcut = self.conv_sc(X_shortcut)
+    X_shortcut = self.norm_sc(X_shortcut)
 
     # Final step: Add shortcut value to main path, and pass it through
     x = tf.add(x, X_shortcut)

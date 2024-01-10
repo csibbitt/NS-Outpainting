@@ -18,35 +18,31 @@ class Decoder(tf.keras.layers.Layer):
     self.identity_block = IdentityBlock(decay, name='identity_block')
     self.shc = Shc(decay)
 
-  def build_normalizer(self):
-      return tfa.layers.InstanceNormalization()
-
-  def build_convT4(self):
-      return tf.keras.layers.Conv2DTranspose(512, 4, strides=(2,2),
+    self.convT_4 = tf.keras.layers.Conv2DTranspose(512, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
+    self.norm_4 = tfa.layers.InstanceNormalization()
 
-  def build_convT3(self):
-      return tf.keras.layers.Conv2DTranspose(256, 4, strides=(2,2),
+    self.convT_3 = tf.keras.layers.Conv2DTranspose(256, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
+    self.norm_3 = tfa.layers.InstanceNormalization()
 
-  def build_convT2(self):
-      return tf.keras.layers.Conv2DTranspose(128, 4, strides=(2,2),
+    self.convT_2 = tf.keras.layers.Conv2DTranspose(128, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
+    self.norm_2 = tfa.layers.InstanceNormalization()
 
-  def build_convT1(self):
-      return tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
+    self.convT_1 = tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
+    self.norm_1 = tfa.layers.InstanceNormalization()
 
-  def build_convT0(self):
-      return tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
+    self.convT_0 = tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
@@ -62,9 +58,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.identity_block(
         x, 3, [256, 256, 1024], stage=-4, block='c', is_relu=True)
 
-
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT4", self.build_convT4)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT4_in", self.build_normalizer)(x)
+    x = self.convT_4(x)
+    x = self.norm_4(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[3], sc], axis=3)
@@ -83,8 +78,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.identity_block(
         x, 3, [128, 128, 512], stage=-3, block='d', is_relu=True)
 
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT3", self.build_convT3)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT3_in", self.build_normalizer)(x)
+    x = self.convT_3(x)
+    x = self.norm_3(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[2], sc], axis=3)
@@ -104,8 +99,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.identity_block(
         x, 3, [64, 64, 256], stage=-2, block='e', is_relu=True)
 
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT2", self.build_convT2)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT2_in", self.build_normalizer)(x)
+    x = self.convT_2(x)
+    x = self.norm_2(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[1], sc], axis=3)
@@ -116,8 +111,8 @@ class Decoder(tf.keras.layers.Layer):
 
     # stage -1
 
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT1", self.build_convT1)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_convT1_in", self.build_normalizer)(x)
+    x = self.convT_1(x)
+    x = self.norm_1(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[0], sc], axis=3)
@@ -127,6 +122,6 @@ class Decoder(tf.keras.layers.Layer):
         [merge, kp], axis=2)
 
     # stage -0
-    recon = tf.compat.v1.keras.utils.get_or_create_layer("main_convT0", self.build_convT0)(x)
+    recon = self.convT_0(x)
 
     return recon
