@@ -6,8 +6,12 @@ class Rct(tf.keras.layers.Layer):
 
   def __init__(self, decay, batch_size_per_gpu, *args, **kwargs):
     super().__init__(*args, **kwargs)
+
+    self.output_size = 1024 #** Orig was: x.get_shape().as_list()[3]
+    self.size = 512
     self.decay = decay
     self.batch_size_per_gpu = batch_size_per_gpu
+
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
     encoder_lstm_cell = tf.keras.layers.LSTMCell(4 * self.size, recurrent_activation=tf.tanh, kernel_initializer=None, recurrent_initializer=None)
@@ -29,8 +33,7 @@ class Rct(tf.keras.layers.Layer):
     self.norm_2 = tfa.layers.InstanceNormalization()
 
   def call(self, x):
-    self.output_size = x.get_shape().as_list()[3]
-    self.size = 512
+
     x = self.conv_1(x)
     x = self.norm_1(x)
     x = tf.nn.leaky_relu(x)

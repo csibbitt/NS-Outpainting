@@ -11,22 +11,26 @@ class Grb(tf.keras.layers.Layer):
 
     self.atrous_a1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(3,1), dilation_rate=rate,
                                             kernel_initializer=tf.keras.initializers.GlorotNormal(),
-                                            kernel_regularizer=tf.keras.regularizers.L2(decay))
-    self.norm_a1 = tfa.layers.InstanceNormalization()
+                                            kernel_regularizer=tf.keras.regularizers.L2(decay),
+                                            padding='SAME')
+    self.norm_a1 = tfa.layers.InstanceNormalization()  #** In the original code, there is just one IN()
 
     self.atrous_a2 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(1,7), dilation_rate=rate,
                                         kernel_initializer=tf.keras.initializers.GlorotNormal(),
-                                        kernel_regularizer=tf.keras.regularizers.L2(decay))
+                                        kernel_regularizer=tf.keras.regularizers.L2(decay),
+                                        padding='SAME')
     self.norm_a2 = tfa.layers.InstanceNormalization()
 
     self.atrous_b1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(1,7), dilation_rate=rate,
                                         kernel_initializer=tf.keras.initializers.GlorotNormal(),
-                                        kernel_regularizer=tf.keras.regularizers.L2(decay))
+                                        kernel_regularizer=tf.keras.regularizers.L2(decay),
+                                        padding='SAME')
     self.norm_b1 = tfa.layers.InstanceNormalization()
 
     self.atrous_b2 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(3,1), dilation_rate=rate,
                                             kernel_initializer=tf.keras.initializers.GlorotNormal(),
-                                            kernel_regularizer=tf.keras.regularizers.L2(decay))
+                                            kernel_regularizer=tf.keras.regularizers.L2(decay),
+                                            padding='SAME')
     self.norm_b2 = tfa.layers.InstanceNormalization()
 
   def call(self, x):

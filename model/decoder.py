@@ -23,6 +23,7 @@ class Decoder(tf.keras.layers.Layer):
               bias_initializer=None, use_bias=False)
     self.norm_4 = tfa.layers.InstanceNormalization()
     self.shc_512 = Shc(decay, 512)
+    self.norm_4_2 = tfa.layers.InstanceNormalization()
 
     self.grb_t3 = Grb(decay, 512, 2)
     self.identity_block_n3b = IdentityBlock(decay, 3, [128, 128, 512], is_relu=True)
@@ -34,6 +35,7 @@ class Decoder(tf.keras.layers.Layer):
               bias_initializer=None, use_bias=False)
     self.norm_3 = tfa.layers.InstanceNormalization()
     self.shc_256 = Shc(decay, 256)
+    self.norm_3_2 = tfa.layers.InstanceNormalization()
 
     self.grb_t2 = Grb(decay, 256, 4)
     self.identity_block_n2b = IdentityBlock(decay, 3, [64, 64, 256], is_relu=True)
@@ -46,6 +48,7 @@ class Decoder(tf.keras.layers.Layer):
               bias_initializer=None, use_bias=False)
     self.norm_2 = tfa.layers.InstanceNormalization()
     self.shc_128 = Shc(decay, 128)
+    self.norm_2_2 = tfa.layers.InstanceNormalization()
 
     self.convT_1 = tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
@@ -53,6 +56,7 @@ class Decoder(tf.keras.layers.Layer):
               bias_initializer=None, use_bias=False)
     self.norm_1 = tfa.layers.InstanceNormalization()
     self.shc_64 = Shc(decay, 64)
+    self.norm_1_2 = tfa.layers.InstanceNormalization()
 
     self.convT_0 = tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
               activation=None, padding='same', kernel_initializer=self.initializer,
@@ -72,7 +76,8 @@ class Decoder(tf.keras.layers.Layer):
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[3], sc], axis=3)
     merge = self.shc_512(merge, shortcuts[3])
-    merge = mr.in_relu(merge, "main_actT4_merge")
+    merge = self.norm_4_2(merge)
+    merge = tf.nn.relu(merge)
     x = tf.concat(
         [merge, kp], axis=2)
 
@@ -89,7 +94,8 @@ class Decoder(tf.keras.layers.Layer):
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[2], sc], axis=3)
     merge = self.shc_256(merge, shortcuts[2])
-    merge = mr.in_relu(merge, "main_actT3_merge")
+    merge = self.norm_3_2(merge)
+    merge = tf.nn.relu(merge)
     x = tf.concat(
         [merge, kp], axis=2)
 
@@ -106,7 +112,8 @@ class Decoder(tf.keras.layers.Layer):
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[1], sc], axis=3)
     merge = self.shc_128(merge, shortcuts[1])
-    merge = mr.in_relu(merge, "main_actT2_merge")
+    merge = self.norm_2_2(merge)
+    merge = tf.nn.relu(merge)
     x = tf.concat(
         [merge, kp], axis=2)
 
@@ -118,7 +125,8 @@ class Decoder(tf.keras.layers.Layer):
     sc = tf.nn.relu(sc)
     merge = tf.concat([shortcuts[0], sc], axis=3)
     merge = self.shc_64(merge, shortcuts[0])
-    merge = mr.in_relu(merge, "main_actT1_merge")
+    merge = self.norm_1_2(merge)
+    merge = tf.nn.relu(merge)
     x = tf.concat(
         [merge, kp], axis=2)
 

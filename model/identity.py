@@ -20,20 +20,19 @@ class IdentityBlock(tf.keras.layers.Layer):
 
     self.conv_1 = tf.keras.layers.Conv2D(filter1,
                                 kernel_size=(1, 1), strides=(1, 1),
-                                name=self.conv_name_base + '2a',
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False, padding='same')
     self.norm_1 = tfa.layers.InstanceNormalization()
 
     self.conv_2 = tf.keras.layers.Conv2D(filter2,
                                 (kernel_size, kernel_size),
-                                padding='same', name=self.conv_name_base + '2b',
+                                padding='same',
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
     self.norm_2 = tfa.layers.InstanceNormalization()
 
     self.conv_3 = tf.keras.layers.Conv2D(filter3,
-                                kernel_size=(1, 1), name=self.conv_name_base + '2c',
+                                kernel_size=(1, 1),
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
     self.norm_4 = tfa.layers.InstanceNormalization()

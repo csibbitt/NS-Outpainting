@@ -48,7 +48,7 @@ class DiscriminatorGlobal(tf.keras.Model):
     img = self.conv_5(img)
     img = self.norm_5(img)
 
-    logit = self.dense(tf.reshape(img, [bs, -1]), 1, activation=None)
+    logit = self.dense(tf.reshape(img, [bs, -1]))
 
     return logit
 
