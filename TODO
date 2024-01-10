@@ -1,17 +1,10 @@
 Model
 ---
-* Test the v2 checkpoint from overnight
-  * Load a middle one and record loss values
-  * Load an earlier one and run it to the same iter to check loss values (epoch bug!)
-* Merge eval/run into one thing with cmdline vs non-cmdline
-* Eliminate session usage in run_model
 * Faster startup for testing (limit dataset load)
 * Eliminate @tf.compat.v1.keras.utils.track_tf1_style_variables
 * Eliminate get_or_create_layer
-* Eliminate session usage in train_model
 * Replace leaky-relu with tf
 * Refactor layout of models vs layers vs utilities
-* Upgrade best training checkpoint to V2 checkpoint
 * Refactor to tf.Loss (do I need multiples?)
 * Utility to rename files with their hash
 * Figure out this NaN problem

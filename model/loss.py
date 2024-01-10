@@ -65,6 +65,8 @@ class Loss():
 
         return loss_adv_G, loss_adv_D
 
+    # Multi-GPU currenty nerfed
+
     # def average_gradients(self, tower_grads):
     #     average_grads = []
     #     for grad_and_vars in zip(*tower_grads):

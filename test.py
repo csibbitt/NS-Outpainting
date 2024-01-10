@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import tensorflow as tf
-import tensorflow.compat.v1 as v1
 
 import numpy as np
 import tf_slim as slim
@@ -37,7 +36,6 @@ from model.loss import Loss
 #   if created_vars:
 #     raise ValueError("Created vars:", created_vars)
 
-# tf.compat.v1.random.set_random_seed(1)
 # tf.keras.utils.set_random_seed(1)
 # tf.config.experimental.enable_op_determinism()
 # tf.random.set_seed(1)
@@ -87,22 +85,6 @@ from model.loss import Loss
 
             # Note that each grad_and_vars looks like the following:
             #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
-# with tf.compat.v1.Session() as sess:
-
-#   loss = Loss(type('cfg',(),{}))
-
-#   g_and_vs = []
-#   for gpunum in range(0,3):
-#     g_and_v = []
-#     for varnum in range(0,4):
-#       g_and_v.append([tf.constant([iter]), tf.constant([iter])])
-#     g_and_vs.append(g_and_v)
-
-#     av = loss.average_gradients(g_and_vs)
-
-#     out = sess.run([av])
-
-#   print(out) 
 
 
 # reader = tf.train.load_checkpoint('logs/20240108/920/checkpoint/ckpt-25')

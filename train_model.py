@@ -118,10 +118,9 @@ writer = tf.summary.create_file_writer(tensorboard_path)
 writer.init()
 
 if args.deterministic_seed != 0:
-    tf.compat.v1.random.set_random_seed(1)
-    tf.keras.utils.set_random_seed(1)
+    tf.keras.utils.set_random_seed(args.deterministic_seed)
+    tf.random.set_seed(args.deterministic_seed)
     tf.config.experimental.enable_op_determinism()
-    tf.random.set_seed(1)
 
 with tf.device('/cpu:0'):
     trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])

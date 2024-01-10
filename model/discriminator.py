@@ -28,7 +28,7 @@ class DiscriminatorGlobal(tf.keras.Model):
 
     self.dense =  tf.keras.layers.Dense(1, activation=None, kernel_initializer=None)
 
-  def call(self, img, name='DIS'):
+  def call(self, img):
     bs = img.get_shape().as_list()[0]
 
     def lrelu(x, leak=0.2):
@@ -80,7 +80,7 @@ class DiscriminatorLocal(tf.keras.Model):
 
     self.dense = tf.keras.layers.Dense(1, activation=None, kernel_initializer=None)
 
-  def call(self, img, name='DIS2'):
+  def call(self, img):
     bs = img.get_shape().as_list()[0]
 
     def lrelu(x, leak=0.2, name="lrelu"):

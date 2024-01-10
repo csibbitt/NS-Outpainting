@@ -16,7 +16,7 @@ class Generator(tf.keras.Model):
         self.decoder = Decoder(cfg.weight_decay)
         self.rct = Rct(cfg.weight_decay, self.cfg.batch_size_per_gpu)
 
-    def call(self, images, reuse=None):
+    def call(self, images):
         x, shortcuts = self.encoder(images)
         x = self.rct(x)
         recon = self.decoder(x, shortcuts)

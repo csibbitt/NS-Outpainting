@@ -30,7 +30,6 @@ class Rct(tf.keras.layers.Layer):
                     kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, x):
     self.output_size = x.get_shape().as_list()[3]
     self.size = 512
