@@ -1,12 +1,8 @@
 import tensorflow as tf
-
-import model.relu as mr
+import tensorflow_addons as tfa
 
 # Recurrent Content Transfer
 class Rct(tf.keras.layers.Layer):
-
-  # def build_regularizer(self):
-  #   return tf.keras.regularizers.L2(self.decay)
 
   def __init__(self, decay, batch_size_per_gpu, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -24,17 +20,20 @@ class Rct(tf.keras.layers.Layer):
                     padding='same',
                     kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
+    self.norm_1 = tfa.layers.InstanceNormalization()
 
     self.conv_2 = tf.keras.layers.Conv2D(self.output_size, 1, strides=(1,1), activation=None,
                     padding='same',
                     kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
+    self.norm_2 = tfa.layers.InstanceNormalization()
 
   def call(self, x):
     self.output_size = x.get_shape().as_list()[3]
     self.size = 512
     x = self.conv_1(x)
-    x = mr.in_lrelu(x, "conv1_act")
+    x = self.norm_1(x)
+    x = tf.nn.leaky_relu(x)
     x = tf.transpose(a=x, perm=[0, 2, 1, 3])
     x = tf.reshape(x, [-1, 4, 4 * self.size])
     x = tf.transpose(a=x, perm=[1, 0, 2])
@@ -62,6 +61,7 @@ class Rct(tf.keras.layers.Layer):
 
     y = tf.concat(ys, axis=2)
 
-    y = self.conv2(y)
-    y = mr.in_lrelu(y, "conv2_act")
+    y = self.conv_2(y)
+    y = self.norm_2(y)
+    y =  tf.nn.leaky_relu(y)
     return y

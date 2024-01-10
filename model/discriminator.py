@@ -7,6 +7,9 @@ class DiscriminatorGlobal(tf.keras.Model):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+    self.size = 128
+    self.activation_fn = tf.nn.leaky_relu
+
     self.conv_1 = tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same')
     
@@ -30,14 +33,6 @@ class DiscriminatorGlobal(tf.keras.Model):
 
   def call(self, img):
     bs = img.get_shape().as_list()[0]
-
-    def lrelu(x, leak=0.2):
-      f1 = 0.5 * (1 + leak)
-      f2 = 0.5 * (1 - leak)
-      return f1 * x + f2 * abs(x)
-
-    self.size = 128
-    self.activation_fn = lrelu
 
     img = self.conv_1(img)
 
@@ -63,6 +58,9 @@ class DiscriminatorLocal(tf.keras.Model):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+    self.size = 128
+    self.activation_fn = tf.nn.leaky_relu
+
     self.conv_1 = tf.keras.layers.Conv2D(filters=self.size / 2, kernel_size=4, kernel_initializer=None,
                           strides=(2,2), activation=self.activation_fn, padding='same')
     
@@ -82,14 +80,6 @@ class DiscriminatorLocal(tf.keras.Model):
 
   def call(self, img):
     bs = img.get_shape().as_list()[0]
-
-    def lrelu(x, leak=0.2, name="lrelu"):
-      f1 = 0.5 * (1 + leak)
-      f2 = 0.5 * (1 - leak)
-      return f1 * x + f2 * abs(x)
-
-    self.size = 128
-    self.activation_fn = lrelu
 
     img = self.conv_1(img)
 

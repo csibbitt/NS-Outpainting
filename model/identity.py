@@ -1,8 +1,6 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-import model.relu as mr
-
 # Identity Block
 class IdentityBlock(tf.keras.layers.Layer):
 
@@ -18,7 +16,7 @@ class IdentityBlock(tf.keras.layers.Layer):
     if is_relu:
       self.activation_fn=tf.nn.relu
     else:
-      self.activation_fn=mr.leaky_relu
+      self.activation_fn=tf.nn.leaky_relu
 
     self.conv_1 = tf.keras.layers.Conv2D(filter1,
                                 kernel_size=(1, 1), strides=(1, 1),

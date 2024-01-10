@@ -3,7 +3,6 @@ import tensorflow_addons as tfa
 
 from model.convolution import ConvolutionalBlock
 from model.identity import IdentityBlock
-import model.relu as mr
 
 # Image encoder pipeline
 class Encoder(tf.keras.layers.Layer):
@@ -17,11 +16,13 @@ class Encoder(tf.keras.layers.Layer):
             strides=(2, 2),
             kernel_regularizer=self.regularizer,
             padding='same', kernel_initializer=self.initializer, use_bias=False)
+    self.norm_0 = tfa.layers.InstanceNormalization()
 
     self.conv_1 = tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4),
             strides=(2, 2),padding='same',
             kernel_regularizer=self.regularizer,
             kernel_initializer=self.initializer, use_bias=False)
+    self.norm_1 = tfa.layers.InstanceNormalization()
 
     self.convolutional_block_2a = ConvolutionalBlock(decay, kernel_size=3, filters=[64, 64, 256])
     self.identity_block_2b = IdentityBlock(decay, 3, [64, 64, 256])
@@ -43,10 +44,12 @@ class Encoder(tf.keras.layers.Layer):
 
     # stage 1
     x = self.conv_0(x)
-    x = mr.in_lrelu(x, "main_act0")
+    x = self.norm_0(x)
+    x = tf.nn.leaky_relu(x)
     shortcuts.append(x)
     x = self.conv_1(x)
-    x = mr.in_lrelu(x, "main_act1")
+    x = self.norm_1(x)
+    x = tf.nn.leaky_relu(x)
     shortcuts.append(x)
 
     # stage 2

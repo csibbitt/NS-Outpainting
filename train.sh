@@ -20,14 +20,13 @@ python train_model.py \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
   --num-gpu 1 \
-  --batch-size 8 \
-  --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8
 \
+  --batch-size 2 \
+  --trainset-length 4 \
+  --testset-length 4 \
+  --epoch 3 \
+  --warmup-steps 2 \
 #   --deterministic-seed 1 \
-#   --trainset-length 4 \
-#   --testset-length 4 \
-#   --epoch 3 \
-#   --warmup-steps 2 \
-  # --load-v2-checkpoint \
-  # --checkpoint-path logs/20240108/920/checkpoint/ckpt-25 \
+#   --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8
+
   ${CKPT_OPTS}

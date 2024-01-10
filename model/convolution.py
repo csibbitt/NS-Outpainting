@@ -1,8 +1,6 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-import model.relu as mr
-
 # Global residual block
 class ConvolutionalBlock(tf.keras.layers.Layer):
 

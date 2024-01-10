@@ -3,7 +3,6 @@ import tensorflow_addons as tfa
 
 from model.grb import Grb
 from model.identity import IdentityBlock
-import model.relu as mr
 from model.shc import Shc
 
 

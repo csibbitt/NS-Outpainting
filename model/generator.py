@@ -5,8 +5,6 @@ from model.encoder import Encoder
 from model.rct import Rct
 from model.decoder import Decoder
 
-import model.relu as mr
-
 class Generator(tf.keras.Model):
     def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)

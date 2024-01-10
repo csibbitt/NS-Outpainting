@@ -1,9 +1,6 @@
 Model
 ---
 * Faster startup for testing (limit dataset load)
-* Eliminate @tf.compat.v1.keras.utils.track_tf1_style_variables
-* Eliminate get_or_create_layer
-* Replace leaky-relu with tf
 * Refactor layout of models vs layers vs utilities
 * Refactor to tf.Loss (do I need multiples?)
 * Utility to rename files with their hash
