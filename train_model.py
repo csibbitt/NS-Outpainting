@@ -8,6 +8,7 @@ from model.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
 import argparse
 import time
+import sys
 
 class Timer():
     def __init__(self, label):
@@ -246,6 +247,9 @@ for epoch in range(args.epoch):
         if iters % 25 == 0:
             print("Iter:", iters, 'loss_g:', loss_G.numpy(), 'loss_d:', loss_D.numpy(), 'loss_adv_g:', loss_adv_G.numpy(), 'loss_rec:', loss_rec.numpy())
             itimer.lap()
+            if np.isnan(loss_G.numpy()):
+                print("NaN detected!!");
+                sys.exit()
 
         if iters % 50 == 0:
             with writer.as_default(step=step):
@@ -312,7 +316,8 @@ for epoch in range(args.epoch):
         writer.flush()
 
         if np.isnan(g_val):
-            print("NaN detected!!")
+            print("NaN detected!!");
+            sys.exit()
     etimer.stop()
 
 #cProfile.run('main()')

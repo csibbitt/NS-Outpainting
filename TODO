@@ -1,9 +1,10 @@
 Model
 ---
+* Decouple GUI from model by loading from G.save() instead of a checkpoint
 * Faster startup for testing (limit dataset load)
-* Refactor layout of models vs layers vs utilities
 * Refactor to tf.Loss (do I need multiples?)
 * Utility to rename files with their hash
+* Bust the testset into jpgs
 * Figure out this NaN problem
   * Can I load a broken checkpoint and find the source?
 * Full TF2 validation training
