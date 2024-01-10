@@ -155,13 +155,6 @@ ckpt = tf.train.Checkpoint(step=step,
                             discrim_l=loss.discrim_l)
 ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
 
-iters = 0
-
-if args.checkpoint_path is not None:
-    print('Start restore checkpoint...')
-    status = ckpt.restore(args.checkpoint_path).assert_consumed()
-    iters = step.numpy()
-    print('Done.')
 
 apply_grads_g = tf.Variable(False, dtype=tf.bool)
 apply_grads_d = tf.Variable(False, dtype=tf.bool)
@@ -193,6 +186,14 @@ def fwd(groundtruth):
         D_opt.apply_gradients(grad_d)
 
     return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
+
+iters = 0
+if args.checkpoint_path is not None:
+    print('Start restore checkpoint...')
+    fwd(tf.zeros([args.batch_size_per_gpu, 128, 256, 3])) # Run a forward pass to construct all vars for .assert_consumed()
+    status = ckpt.restore(args.checkpoint_path).assert_consumed()
+    iters = step.numpy()
+    print('Done.')
 
 print('Start training...')
 for epoch in range(args.epoch):

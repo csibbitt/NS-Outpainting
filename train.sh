@@ -21,6 +21,7 @@ python train_model.py \
   --log-path ./logs/ \
   --num-gpu 1 \
   --batch-size 8 \
+  --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8
 \
 #   --deterministic-seed 1 \
 #   --trainset-length 4 \

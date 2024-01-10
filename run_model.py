@@ -39,7 +39,7 @@ parser.add_argument('--checkpoint-path', type=str, default=None)
 parser.add_argument('--resume-step', type=int, default=0)
 
 # ***** Checkpoint handling
-args = parser.parse_args("--batch-size 1 --testset-length 2000 --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr --checkpoint-path checkpoint/-19939".split())
+args = parser.parse_args("--batch-size 1 --testset-length 2000 --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8".split())
 
 # prepare gpu
 num_gpu = args.num_gpu
@@ -64,31 +64,6 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
         testset_iter = iter(testset)
 
         print('build model on gpu tower')
-        # models = []
-        # params = []
-        # for gpu_id in range(num_gpu):
-        #     with tf.device('/gpu:%d' % gpu_id):
-        #         print('tower_%d' % gpu_id)
-        #         with tf.name_scope('tower_%d' % gpu_id):
-        #             with tf.compat.v1.variable_scope('cpu_variables', reuse=gpu_id > 0):
-
-        #                 groundtruth = tf.compat.v1.placeholder(
-        #                     tf.float32, [args.batch_size_per_gpu, 128, 256, 3], name='groundtruth')
-        #                 left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3])
-
-        #                 reconstruction = generator(left_gt)
-        #                 right_recon = tf.slice(reconstruction, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
-
-        #                 models.append((reconstruction, right_recon))
-        #                 params.append(groundtruth)
-        # print('Done.')
-
-        # print('Start reducing towers on cpu...')
-        # reconstructions, right_recons = zip(*models)
-        # with tf.device('/gpu:0'):
-        #     reconstructions = tf.concat(reconstructions, axis=0)
-        #     right_recons = tf.concat(right_recons, axis=0)
-        # print('Done.')
 
         ckpt = tf.train.Checkpoint(generator=generator)
         if args.checkpoint_path is not None:
