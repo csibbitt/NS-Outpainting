@@ -15,30 +15,24 @@ class Encoder(tf.keras.layers.Layer):
     self.convolutional_block = ConvolutionalBlock(decay)
     self.identity_block = IdentityBlock(decay, name='identity_block')
 
-  def build_normalizer(self):
-    return tfa.layers.InstanceNormalization()
-
-  def build_conv0(self):
-    return tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4),
-            strides=(2, 2), name='conv0',
+    self.conv_0 = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4),
+            strides=(2, 2),
             kernel_regularizer=self.regularizer,
             padding='same', kernel_initializer=self.initializer, use_bias=False)
-
-  def build_conv1(self):
-    return tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4),
-            strides=(2, 2), name='conv1', padding='same',
+    
+    self.conv_1 = tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4),
+            strides=(2, 2),padding='same',
             kernel_regularizer=self.regularizer,
             kernel_initializer=self.initializer, use_bias=False)
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, x):
     shortcuts = []
 
     # stage 1
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_conv0", self.build_conv0)(x)
+    x = self.conv_0(x)
     x = mr.in_lrelu(x, "main_act0")
     shortcuts.append(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("main_conv1", self.build_conv1)(x)
+    x = self.conv_1(x)
     x = mr.in_lrelu(x, "main_act1")
     shortcuts.append(x)
 

@@ -47,7 +47,6 @@ class Decoder(tf.keras.layers.Layer):
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, x, shortcuts):
     # stage -4
     x = tf.concat([shortcuts[4], x], axis=2)

@@ -26,11 +26,12 @@ class DiscriminatorGlobal(tf.keras.Model):
                           strides=(2,2), activation=self.activation_fn, padding='same', use_bias=False)
     self.norm_5 = tfa.layers.InstanceNormalization()
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
+    self.dense =  tf.keras.layers.Dense(1, activation=None, kernel_initializer=None)
+
   def call(self, img, name='DIS'):
     bs = img.get_shape().as_list()[0]
 
-    def lrelu(x, leak=0.2, name="lrelu"):
+    def lrelu(x, leak=0.2):
       f1 = 0.5 * (1 + leak)
       f2 = 0.5 * (1 - leak)
       return f1 * x + f2 * abs(x)
@@ -52,8 +53,7 @@ class DiscriminatorGlobal(tf.keras.Model):
     img = self.conv_5(img)
     img = self.norm_5(img)
 
-    logit = tf.compat.v1.layers.dense(tf.reshape(
-        img, [bs, -1]), 1, activation=None, name=name+"/dense")
+    logit = self.dense(tf.reshape(img, [bs, -1]), 1, activation=None)
 
     return logit
 
@@ -80,9 +80,7 @@ class DiscriminatorLocal(tf.keras.Model):
 
     self.dense = tf.keras.layers.Dense(1, activation=None, kernel_initializer=None)
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, img, name='DIS2'):
-
     bs = img.get_shape().as_list()[0]
 
     def lrelu(x, leak=0.2, name="lrelu"):

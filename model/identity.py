@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 
 import model.relu as mr
 
-# Global residual block
+# Identity Block
 class IdentityBlock(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
@@ -13,30 +13,26 @@ class IdentityBlock(tf.keras.layers.Layer):
     self.initializer = tf.keras.initializers.GlorotNormal()
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
-  def build_normalizer(self):
-    return tfa.layers.InstanceNormalization()
-
-  def build_conv1(self):
-    return tf.keras.layers.Conv2D(self.filter1,
+    self.conv_1 = tf.keras.layers.Conv2D(self.filter1,
                                 kernel_size=(1, 1), strides=(1, 1),
                                 name=self.conv_name_base + '2a',
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False, padding='same')
+    self.norm_1 = tfa.layers.InstanceNormalization()
 
-  def build_conv2(self):
-    return tf.keras.layers.Conv2D(self.filter2,
+    self.conv_2 = tf.keras.layers.Conv2D(self.filter2,
                                 (self.kernel_size, self.kernel_size),
                                 padding='same', name=self.conv_name_base + '2b',
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
+    self.norm_2 = tfa.layers.InstanceNormalization()
 
-  def build_conv3(self):
-    return tf.keras.layers.Conv2D(self.filter3,
+    self.conv_3 = tf.keras.layers.Conv2D(self.filter3,
                                 kernel_size=(1, 1), name=self.conv_name_base + '2c',
                                 kernel_regularizer=self.regularizer,
                                 kernel_initializer=self.initializer, use_bias=False)
+    self.norm_4 = tfa.layers.InstanceNormalization()
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, X_input, kernel_size, filters, stage, block, is_relu=False):
 
     self.conv_name_base = 'res' + str(stage) + block + '_branch'
@@ -54,21 +50,21 @@ class IdentityBlock(tf.keras.layers.Layer):
     X_shortcut = X_input
 
     # First component of main path
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv1", self.build_conv1)(X_input)
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer1", self.build_normalizer)(x)
-    x = activation_fn(x, self.conv_name_base + "_id_act1")
+    x = self.conv_1(X_input)
+    x = self.norm_1(x)
+    x = activation_fn(x)
 
     # Second component of main path
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv2", self.build_conv2)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer2", self.build_normalizer)(x)
-    x = activation_fn(x, self.conv_name_base + "_id_act2")
+    x = self.conv_2(x)
+    x = self.norm_2(x)
+    x = activation_fn(x)
 
     # Third component of main path
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_conv3", self.build_conv3)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer(self.conv_name_base + "_id_nomalizer3", self.build_normalizer)(x)
+    x = self.conv_3(x)
+    x = self.norm_4(x)
 
     # Final step: Add shortcut value to main path, and pass it through
     x = tf.add(x, X_shortcut)
-    x = activation_fn(x, self.conv_name_base + "_id_act3")
+    x = activation_fn(x)
 
     return x

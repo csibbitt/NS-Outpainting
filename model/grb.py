@@ -9,9 +9,14 @@ class Grb(tf.keras.layers.Layer):
 
     self.decay = decay
     self.activation_fn = tf.nn.relu
+
+    self.norm_a1 = tfa.layers.InstanceNormalization()
+    self.norm_a2 = tfa.layers.InstanceNormalization()
+    self.norm_b1 = tfa.layers.InstanceNormalization()
+    self.norm_b2 = tfa.layers.InstanceNormalization()
   
   def build_normalizer(self):
-    return tfa.layers.InstanceNormalization()
+    return 
 
   @tf.compat.v1.keras.utils.track_tf1_style_variables
   def new_atrous_conv_layer(self, bottom, filter_shape, rate, name=None):
@@ -30,16 +35,16 @@ class Grb(tf.keras.layers.Layer):
   def call(self, x, filters, rate, name):
     shortcut = x
     x1 = self.new_atrous_conv_layer(x, [3, 1, filters, filters], rate, name+'_a1')
-    x1 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer1_" + name, self.build_normalizer)(x1)
-    x1 = self.activation_fn(x1, name + "_grb_act1")
+    x1 = self.norm_a1(x1)
+    x1 = self.activation_fn(x1)
     x1 = self.new_atrous_conv_layer(x1, [1, 7, filters, filters], rate, name+'_a2')
-    x1 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer2_" + name, self.build_normalizer)(x1)
+    x1 = self.norm_a2(x1)
 
     x2 = self.new_atrous_conv_layer(x, [1, 7, filters, filters], rate, name+'_b1')
-    x2 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer3_" + name, self.build_normalizer)(x2)
-    x2 = self.activation_fn(x2, name + "_grb_act2")
+    x2 = self.norm_b1(x2)
+    x2 = self.activation_fn(x2)
     x2 = self.new_atrous_conv_layer(x2, [3, 1, filters, filters], rate, name+'_b2')
-    x2 = tf.compat.v1.keras.utils.get_or_create_layer("grb_nomalizer4_" + name, self.build_normalizer)(x2)
+    x2 = self.norm_b2(x2)
 
     x = tf.add(shortcut, x1)
     x = tf.add(x, x2)

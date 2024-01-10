@@ -9,35 +9,31 @@ class Shc(tf.keras.layers.Layer):
     self.decay = decay
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
-  def build_conv1(self):
-    return tf.keras.layers.Conv2D(self.channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
+    self.conv_1 = tf.keras.layers.Conv2D(self.channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
                   padding='same', use_bias=False,
-                  kernel_regularizer=self.regularizer, kernel_initializer=None
-    )
+                  kernel_regularizer=self.regularizer, kernel_initializer=None)
+    self.norm_1 = tfa.layers.InstanceNormalization()
 
-  def build_conv2(self):
-    return tf.keras.layers.Conv2D(self.channels / 2, 3, strides=(1,1), activation=tf.nn.relu,
+    self.conv_2 = tf.keras.layers.Conv2D(self.channels / 2, 3, strides=(1,1), activation=tf.nn.relu,
                   padding='same', use_bias=False,
-                  kernel_regularizer=self.regularizer, kernel_initializer=None
-    )
+                  kernel_regularizer=self.regularizer, kernel_initializer=None)
+    self.norm_2 = tfa.layers.InstanceNormalization()
 
-  def build_conv3(self):
-    return tf.keras.layers.Conv2D(self.channels, 1, strides=(1,1), activation=None,
+    self.conv_3 = tf.keras.layers.Conv2D(self.channels, 1, strides=(1,1), activation=None,
                   padding='same', use_bias=False,
-                  kernel_regularizer=self.regularizer, kernel_initializer=None
-    )
+                  kernel_regularizer=self.regularizer, kernel_initializer=None)
+    self.norm_3 = tfa.layers.InstanceNormalization()
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, x, shortcut, channels):
     self.channels = channels
 
-    x = tf.compat.v1.keras.utils.get_or_create_layer("shc_conv1_" + str(channels), self.build_conv1)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("shc_conv1_" + str(channels) + "_in", tfa.layers.InstanceNormalization)(x)
+    x = self.conv_1(x)
+    x = self.norm_1(x)
 
-    x = tf.compat.v1.keras.utils.get_or_create_layer("shc_conv2_" + str(channels), self.build_conv2)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("shc_conv2_" + str(channels) + "_in", tfa.layers.InstanceNormalization)(x)
+    x = self.conv_2(x)
+    x = self.norm_2(x)
 
-    x = tf.compat.v1.keras.utils.get_or_create_layer("shc_conv3_" + str(channels), self.build_conv3)(x)
-    x = tf.compat.v1.keras.utils.get_or_create_layer("shc_conv3_" + str(channels) + "_in", tfa.layers.InstanceNormalization)(x)
+    x = self.conv_3(x)
+    x = self.norm_3(x)
 
     return tf.add(shortcut, x)

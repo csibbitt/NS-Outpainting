@@ -37,7 +37,6 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
                                 kernel_initializer=self.initializer, use_bias=False)
     self.norm_sc = tfa.layers.InstanceNormalization()
 
-  @tf.compat.v1.keras.utils.track_tf1_style_variables
   def call(self, X_input, kernel_size, filters, stage, block, stride=2, is_relu=False):
     self.conv_name_base = 'res' + str(stage) + block + '_branch'
     self.kernel_size = kernel_size
