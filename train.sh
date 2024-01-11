@@ -17,7 +17,8 @@ time python train_model.py \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
   --num-gpu 1 \
-  --batch-size 16
+  --batch-size 8 \
+  --checkpoint-path logs/20240111/1307/checkpoint/ckpt-3
 ##\
 #  --batch-size 2 \
 #  --trainset-length 4 \

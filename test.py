@@ -44,50 +44,61 @@ def catch_and_raise_created_variables():
 # # with random_tool.scope():
 
 
-# learning_rate = tf.Variable(0.0001, dtype=tf.float32, shape=[])
-# lambda_rec =  tf.Variable(0.998, dtype=tf.float32, shape=[])
+learning_rate = tf.Variable(0.0001, dtype=tf.float32, shape=[])
+lambda_rec =  tf.Variable(0.998, dtype=tf.float32, shape=[])
 
-# G_opt = tf.keras.optimizers.Adam(
-#     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
-# D_opt = tf.keras.optimizers.Adam(
-#     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+G_opt = tf.keras.optimizers.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+D_opt = tf.keras.optimizers.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
-# inputs = tf.zeros( (2, 128, 256, 3))
-# groundtruth = inputs
+inputs = tf.zeros( (2, 128, 256, 3))
+groundtruth = inputs
 
-# 
+cfg = type('cfg', (), {'weight_decay': 0.00002, 'batch_size_per_gpu': 1})()
+G = Generator(cfg)
+generator = G
+D_l = DiscriminatorLocal()
+D_g = DiscriminatorGlobal()
+loss = Loss(cfg)
 
-# G = Generator(cfg)
-# generator = G
-# D_l = DiscriminatorLocal()
-# D_g = DiscriminatorGlobal()
-# loss = Loss(cfg)
+step = tf.Variable(0, dtype=tf.int64, trainable=False)
+ckpt_epoch = tf.Variable(0, dtype=tf.int64, trainable=False)
 
-# with tf.GradientTape() as g_G, tf.GradientTape() as g_D:
-#     g_G.watch(groundtruth)
-#     g_D.watch(groundtruth)
+ckpt = tf.train.Checkpoint( step = step,
+                            epoch=ckpt_epoch,
+                            G_opt=G_opt,
+                            D_opt=D_opt,
+                            generator=generator,
+                            discrim_g=loss.discrim_g,
+                            discrim_l=loss.discrim_l)
+status = ckpt.restore('./badcheckpoint/ckpt-25').assert_consumed()
 
-#     # Create all weights on the first call
-#     print('===== Running all models once')
-#     left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [2, 128, 128, 3])
-#     reconstruction = generator(left_gt)
+tf.debugging.enable_check_numerics()
 
-#     loss_rec = loss.masked_reconstruction_loss(inputs, reconstruction)  #** Could skip this when only training D()
-#     loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction) #** Could skip this during G() warmu
+with tf.GradientTape() as g_G, tf.GradientTape() as g_D:
+    g_G.watch(groundtruth)
+    g_D.watch(groundtruth)
 
-#     loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + tf.reduce_sum(generator.losses)
-#     loss_D = loss_adv_D
+    left_gt = tf.slice(groundtruth, [0, 0, 0, 0], [2, 128, 128, 3])
+    reconstruction = generator(left_gt)
 
-#     var_G = generator.trainable_variables
-#     var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
+    loss_rec = loss.masked_reconstruction_loss(inputs, reconstruction)  #** Could skip this when only training D()
+    loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction) #** Could skip this during G() warmu
 
-#     grad_g = G_opt.compute_gradients(loss_G, var_G, tape=g_G)
-#     grad_d = D_opt.compute_gradients(loss_D, var_D, tape=g_D)
+    loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + tf.reduce_sum(generator.losses)
+    loss_D = loss_adv_D
 
-#     G_opt.apply_gradients(grad_g)
-#     D_opt.apply_gradients(grad_d)
+    var_G = generator.trainable_variables
+    var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
 
-# print(loss_G.numpy())
+    grad_g = G_opt.compute_gradients(loss_G, var_G, tape=g_G)
+    grad_d = D_opt.compute_gradients(loss_D, var_D, tape=g_D)
+
+    G_opt.apply_gradients(grad_g)
+    D_opt.apply_gradients(grad_d)
+
+print(loss_G.numpy())
 
 # recon = G(inputs)
 
@@ -104,14 +115,16 @@ def catch_and_raise_created_variables():
             #   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
 
 
-# reader = tf.train.load_checkpoint('logs/20240108/920/checkpoint/ckpt-25')
+# reader = tf.train.load_checkpoint('./badcheckpoint/ckpt-25')
+
+
 
 # reader.get_tensor('step/.ATTRIBUTES/VARIABLE_VALUE')
 
 #tf.math.top_k( list(tf.train.list_variables('./badcheckpoint/ckpt-25')), k=5, sorted=True )
 
-for var in tf.train.list_variables('./badcheckpoint/ckpt-25'):
-  print(f'{var} : {var.numpy()}')
+# for var in tf.train.list_variables('./badcheckpoint/ckpt-25'):
+#   print(f'{var} : {var.numpy()}')
 
 
 

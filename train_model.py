@@ -10,6 +10,8 @@ import argparse
 import time
 import sys
 
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 class Timer():
     def __init__(self, label):
         self.label = label
@@ -67,14 +69,12 @@ parser.add_argument('--lambda-rec', type=float, default=0.998)
 # checkpoint
 parser.add_argument('--log-path', type=str, default='./logs/')
 parser.add_argument('--checkpoint-path', type=str, default=None)
-parser.add_argument('--resume-step', type=int, default=0)
-parser.add_argument('--load-v2-checkpoint', action='store_true', default=False)
 
-# determinism
+# debugging
 parser.add_argument('--deterministic-seed', type=int, default=0)
+parser.add_argument('--check-numerics', action='store_true', default=False)
 
 args = parser.parse_args()
-
 
 # prepare path
 base_path = args.log_path
@@ -195,6 +195,9 @@ if args.checkpoint_path is not None:
     iters = step.numpy()
     print('Done.')
 
+if args.check_numerics:
+    tf.debugging.enable_check_numerics()
+
 print('Start training...')
 for epoch in range(ckpt_epoch.numpy(), args.epoch):
     etimer = Timer(f'epoch {epoch}')
@@ -283,7 +286,7 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
             n_batchs += 1
 
             # Save test results
-            if epoch % 1 == 0:
+            if epoch % 100 == 0:
                 for rec_val, test_ori in zip(reconstruction_vals, test_oris):
                     rec_hid = (255. * (rec_val.numpy() + 1) /
                                 2.).astype(np.uint8)
