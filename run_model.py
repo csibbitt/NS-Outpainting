@@ -1,78 +1,27 @@
 import random
-import os
 from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from model.generator import Generator
-from model.loss import Loss
 from dataset.build_dataset import input_hasher
 from dataset.parse import parse_testset
-import argparse
-import math
 
-parser = argparse.ArgumentParser(description='Model testing.')
-# experiment
-parser.add_argument('--date', type=str, default='1213')
-parser.add_argument('--exp-index', type=int, default=1)
-parser.add_argument('--f', action='store_true', default=False)
-
-# gpu
-parser.add_argument('--start-gpu', type=int, default=0)
-parser.add_argument('--num-gpu', type=int, default=1)
-
-# dataset
-parser.add_argument('--trainset-path', type=str, default='./dataset/trainset.tfr')
-parser.add_argument('--testset-path', type=str, default='./dataset/testset.tfr')
-parser.add_argument('--trainset-length', type=int, default=5041)
-parser.add_argument('--testset-length', type=int, default=2000)  # we flip every image in testset
-
-# # training
-parser.add_argument('--batch-size', type=int, default=20)
-parser.add_argument('--weight-decay', type=float, default=0.00002)
-
-parser.add_argument('--workers', type=int, default=2)
-
-# checkpoint
-parser.add_argument('--log-path', type=str, default='./logs/')
-parser.add_argument('--checkpoint-path', type=str, default=None)
-parser.add_argument('--resume-step', type=int, default=0)
-
-# ***** Checkpoint handling
-args = parser.parse_args("--batch-size 1 --testset-length 2000 --trainset-path ./dataset/trainset.tfr --testset-path ./dataset/testset.tfr --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8".split())
-
-# prepare gpu
-num_gpu = args.num_gpu
-start_gpu = args.start_gpu
-gpu_id = str(start_gpu)
-for i in range(num_gpu - 1):
-    gpu_id = gpu_id + ',' + str(start_gpu + i + 1)
-os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
-args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
-
-generator = Generator(args, name='model')
-loss = Loss(args)
+testset_path = './dataset/testset.tfr'
 
 def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash, mix_strength):
 
     print("Start building model...")
     with tf.device('/cpu:0'):
 
-        testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-        testset = testset.map(parse_testset, num_parallel_calls=args.workers)
-        testset = testset.batch(args.batch_size).repeat()
+        testset = tf.data.TFRecordDataset(filenames=[testset_path])
+        testset = testset.map(parse_testset)
+        testset = testset.batch(1).repeat()
         testset_iter = iter(testset)
 
-        print('build model on gpu tower')
-
-        ckpt = tf.train.Checkpoint(generator=generator)
-        if args.checkpoint_path is not None:
-            print('Start loading checkpoint...')
-            ckpt.restore(args.checkpoint_path).assert_existing_objects_matched()
-            print('Done.')
+        generator = tf.keras.models.load_model("saved-model.tf")
 
         print('run eval...')
-        stitch_mask1 = np.ones((args.batch_size, 128, 128, 3))
+        stitch_mask1 = np.ones((1, 128, 128, 3))
         for i in range(128):
             stitch_mask1[:, :, i, :] = 1. / 127. * (127. - i)
         stitch_mask2 = stitch_mask1[:, :, ::-1, :]
@@ -95,8 +44,8 @@ def mainSession(buffer_size, img_callback, shuffle_flag, input_images, seed_hash
             oris = None
             while not shuffle_flag.get():
                 with tf.device('/gpu:0'):
-                    reconstruction_vals = generator(tf.slice(test_oris, [0, 0, 0, 0], [args.batch_size_per_gpu, 128, 128, 3]))  #** This is silly since we add zeros on loaded images. Just chop the testset image instead
-                prediction_vals = tf.slice(reconstruction_vals, [0, 0, 128, 0], [args.batch_size_per_gpu, 128, 128, 3])
+                    reconstruction_vals = generator(tf.slice(test_oris, [0, 0, 0, 0], [1, 128, 128, 3]))
+                prediction_vals = tf.slice(reconstruction_vals, [0, 0, 128, 0], [1, 128, 128, 3])
 
                 if oris is None:
                     oris = reconstruction_vals

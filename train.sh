@@ -1,6 +1,5 @@
 #!/bin/sh
 
-CHECKPOINT=""
 export CUDA_HOME=/usr/lib/cuda
 export XLA_FLAGS="--xla_gpu_cuda_data_dir=${CUDA_HOME}"
 #export XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/share/miniconda/lib/ # Genesis
@@ -10,8 +9,6 @@ if [ ! -f tf_dataset_new/trainset.tfr ]; then
   unzip tf_scenery.zip
 fi
 
-if [ ! -z "${CHECKPOINT}" ]; then CKPT_OPTS=" --checkpoint-path ./checkpoint/-${CHECKPOINT}  --resume-step ${CHECKPOINT}"; fi
-
 python train_model.py \
   --f \
   --date $(date +%Y%m%d) \
@@ -20,14 +17,12 @@ python train_model.py \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
   --num-gpu 1 \
-  --batch-size 8 \
-\
-# --batch-size 2 \
-# --trainset-length 4 \
-# --testset-length 4 \
-# --epoch 3 \
-# --warmup-steps 40 \
-# --deterministic-seed 1 \
+  --batch-size 2 \
+  --trainset-length 4 \
+  --testset-length 4 \
+  --epoch 2 \
+  --warmup-steps 40 \
+  --deterministic-seed 1 \
 # --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8
 
   ${CKPT_OPTS}
