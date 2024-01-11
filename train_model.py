@@ -144,8 +144,10 @@ G_opt = tf.keras.optimizers.Adam(
 D_opt = tf.keras.optimizers.Adam(
     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
-step = tf.Variable(0, dtype=tf.int64, trainable=False)
+step = tf.Variable(0, dtype=tf.int32, trainable=False)
+ckpt_epoch = tf.Variable(0, dtype=tf.int16, trainable=False)
 ckpt = tf.train.Checkpoint(step=step,
+                            epoch=ckpt_epoch,
                             G_opt=G_opt,
                             D_opt=D_opt,
                             generator=generator,
@@ -194,18 +196,17 @@ if args.checkpoint_path is not None:
     print('Done.')
 
 print('Start training...')
-for epoch in range(args.epoch):
+for epoch in range(ckpt_epoch.numpy(), args.epoch):
     etimer = Timer(f'epoch {epoch}')
     if epoch > args.lr_decay_epoch:
-        learning_rate.assign(args.base_lr / 10)  # ***** This looks like a bug, after loading a checkpoint, lr will be high for some epochs
-                                                 # Would need to save/load epoch in the checkpoint. Since lr_decay_epoch is 1000, this is only for the final 1/3
+        learning_rate.assign(args.base_lr / 10)
 
     itimer = Timer('iter')
     for start, end in zip(
             range(0, args.trainset_length, args.batch_size),
             range(args.batch_size, args.trainset_length, args.batch_size)):
 
-        if iters == 0 and args.checkpoint_path is None:
+        if iters == 0:
             gtimer = Timer('G warmup')
             print('Start pretraining G!')
             lambda_rec.assign(1.)
@@ -223,7 +224,7 @@ for epoch in range(args.epoch):
 
         lambda_rec.assign(args.lambda_rec)
 
-        if (iters < 25 and args.checkpoint_path is None) or iters % 500 == 0:
+        if (iters < 25) or iters % 500 == 0:
             n_cir = 30
         else:
             n_cir = args.critic_steps
@@ -249,7 +250,6 @@ for epoch in range(args.epoch):
                 print("NaN detected!!");
                 sys.exit()
 
-        if iters % 50 == 0:
             with writer.as_default(step=step):
                 tf.summary.scalar('loss/g', loss_G)
                 tf.summary.scalar('loss/d', loss_D)
@@ -261,6 +261,7 @@ for epoch in range(args.epoch):
 
         iters += 1
         step.assign_add(1)
+    ckpt_epoch.assign_add(1)
     ckpt_manager.save()
 
 
