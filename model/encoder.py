@@ -9,19 +9,18 @@ class Encoder(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
-    self.regularizer = tf.keras.regularizers.L2(decay)
+    regularizer = tf.keras.regularizers.L2(decay)
 
     self.conv_0 = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4),
             strides=(2, 2),
-            kernel_regularizer=self.regularizer,
-            padding='same', kernel_initializer=self.initializer, use_bias=False)
+            kernel_regularizer=regularizer,
+            padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_0 = tfa.layers.InstanceNormalization()
 
     self.conv_1 = tf.keras.layers.Conv2D(filters=128, kernel_size=(4, 4),
             strides=(2, 2),padding='same',
-            kernel_regularizer=self.regularizer,
-            kernel_initializer=self.initializer, use_bias=False)
+            kernel_regularizer=regularizer,
+            kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_1 = tfa.layers.InstanceNormalization()
 
     self.convolutional_block_2a = ConvolutionalBlock(decay, kernel_size=3, filters=[64, 64, 256])

@@ -7,34 +7,32 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
   def __init__(self, decay, kernel_size, filters, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-    self.decay = decay
-    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
-    self.regularizer = tf.keras.regularizers.L2(self.decay)
+    regularizer = tf.keras.regularizers.L2(decay)
 
-    self.filter1, self.filter2, self.filter3 = filters
+    filter1, filter2, filter3 = filters
 
-    self.conv_2a = tf.keras.layers.Conv2D(self.filter1,
+    self.conv_2a = tf.keras.layers.Conv2D(filter1,
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
-                                 kernel_regularizer=self.regularizer,
-                                 kernel_initializer=self.initializer, use_bias=False, padding='same')
+                                 kernel_regularizer=regularizer,
+                                 kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False, padding='same')
     self.norm_2a = tfa.layers.InstanceNormalization()
 
-    self.conv_2b = tf.keras.layers.Conv2D(self.filter2,
+    self.conv_2b = tf.keras.layers.Conv2D(filter2,
                                 (kernel_size, kernel_size), strides=(2,2),
-                                padding='same', kernel_regularizer=self.regularizer,
-                                kernel_initializer=self.initializer, use_bias=False)
+                                padding='same', kernel_regularizer=regularizer,
+                                kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_2b = tfa.layers.InstanceNormalization()
 
-    self.conv_2c = tf.keras.layers.Conv2D(self.filter3, (1, 1),
-                                kernel_regularizer=self.regularizer,
-                                kernel_initializer=self.initializer, use_bias=False)
+    self.conv_2c = tf.keras.layers.Conv2D(filter3, (1, 1),
+                                kernel_regularizer=regularizer,
+                                kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_2c = tfa.layers.InstanceNormalization()
 
-    self.conv_sc = tf.keras.layers.Conv2D(self.filter3, (1, 1),
+    self.conv_sc = tf.keras.layers.Conv2D(filter3, (1, 1),
                                 strides=(2,2),
-                                kernel_regularizer=self.regularizer,
-                                kernel_initializer=self.initializer, use_bias=False)
+                                kernel_regularizer=regularizer,
+                                kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_sc = tfa.layers.InstanceNormalization()
 
   def call(self, X_input):

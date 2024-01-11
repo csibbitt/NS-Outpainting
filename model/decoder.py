@@ -11,15 +11,14 @@ class Decoder(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
-    self.regularizer = tf.keras.regularizers.L2(decay)
+    regularizer = tf.keras.regularizers.L2(decay)
 
     self.grb_t4 = Grb(decay, 1024, 1)
     self.identity_block_n4b = IdentityBlock(decay, 3, [256, 256, 1024], is_relu=True)
     self.identity_block_n4c = IdentityBlock(decay,3, [256, 256, 1024], is_relu=True)
     self.convT_4 = tf.keras.layers.Conv2DTranspose(512, 4, strides=(2,2),
-              activation=None, padding='same', kernel_initializer=self.initializer,
-              kernel_regularizer=self.regularizer,
+              activation=None, padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(),
+              kernel_regularizer=regularizer,
               bias_initializer=None, use_bias=False)
     self.norm_4 = tfa.layers.InstanceNormalization()
     self.shc_512 = Shc(decay, 512)
@@ -30,8 +29,8 @@ class Decoder(tf.keras.layers.Layer):
     self.identity_block_n3c = IdentityBlock(decay, 3, [128, 128, 512], is_relu=True)
     self.identity_block_n3d = IdentityBlock(decay, 3, [128, 128, 512], is_relu=True)
     self.convT_3 = tf.keras.layers.Conv2DTranspose(256, 4, strides=(2,2),
-              activation=None, padding='same', kernel_initializer=self.initializer,
-              kernel_regularizer=self.regularizer,
+              activation=None, padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(),
+              kernel_regularizer=regularizer,
               bias_initializer=None, use_bias=False)
     self.norm_3 = tfa.layers.InstanceNormalization()
     self.shc_256 = Shc(decay, 256)
@@ -43,24 +42,24 @@ class Decoder(tf.keras.layers.Layer):
     self.identity_block_n2d = IdentityBlock(decay, 3, [64, 64, 256], is_relu=True)
     self.identity_block_n2e = IdentityBlock(decay, 3, [64, 64, 256], is_relu=True)
     self.convT_2 = tf.keras.layers.Conv2DTranspose(128, 4, strides=(2,2),
-              activation=None, padding='same', kernel_initializer=self.initializer,
-              kernel_regularizer=self.regularizer,
+              activation=None, padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(),
+              kernel_regularizer=regularizer,
               bias_initializer=None, use_bias=False)
     self.norm_2 = tfa.layers.InstanceNormalization()
     self.shc_128 = Shc(decay, 128)
     self.norm_2_2 = tfa.layers.InstanceNormalization()
 
     self.convT_1 = tf.keras.layers.Conv2DTranspose(64, 4, strides=(2,2),
-              activation=None, padding='same', kernel_initializer=self.initializer,
-              kernel_regularizer=self.regularizer,
+              activation=None, padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(),
+              kernel_regularizer=regularizer,
               bias_initializer=None, use_bias=False)
     self.norm_1 = tfa.layers.InstanceNormalization()
     self.shc_64 = Shc(decay, 64)
     self.norm_1_2 = tfa.layers.InstanceNormalization()
 
     self.convT_0 = tf.keras.layers.Conv2DTranspose(3, 4, strides=(2,2),
-              activation=None, padding='same', kernel_initializer=self.initializer,
-              kernel_regularizer=self.regularizer,
+              activation=None, padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(),
+              kernel_regularizer=regularizer,
               bias_initializer=None, use_bias=False)
 
   def call(self, x, sc_0, sc_1, sc_2, sc_3, sc_4):
