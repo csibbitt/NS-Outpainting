@@ -125,12 +125,12 @@ with tf.device('/cpu:0'):
     trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
     trainset = trainset.shuffle(args.trainset_length)
     trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
-    trainset = trainset.batch(args.batch_size).repeat()
+    trainset = trainset.batch(args.batch_size, drop_remainder=True).repeat()
     train_im = iter(trainset)
 
     testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
     testset = testset.map(parse_testset, num_parallel_calls=args.workers)
-    testset = testset.batch(args.batch_size).repeat()
+    testset = testset.batch(args.batch_size, drop_remainder=True).repeat()
     test_im = iter(testset)
 
 generator = Generator(args)
@@ -214,8 +214,6 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
                 if t % 20 == 0:
                     print("Step:", t)
                 images = train_im.get_next()
-                if len(images) < args.batch_size:
-                    images =  train_im.get_next()
 
                 apply_grads_g.assign(True)
                 loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
@@ -274,8 +272,6 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
         n_batchs = 0
         for _ in range(int(args.testset_length / args.batch_size)):
             test_oris = test_im.get_next()
-            if len(test_oris) < args.batch_size:
-                test_oris = test_im.get_next()
 
             apply_grads_g.assign(False)
             apply_grads_d.assign(False)
