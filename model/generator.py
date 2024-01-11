@@ -8,11 +8,10 @@ from model.decoder import Decoder
 class Generator(tf.keras.Model):
     def __init__(self, cfg, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.cfg = cfg
 
         self.encoder = Encoder(cfg.weight_decay)
         self.decoder = Decoder(cfg.weight_decay)
-        self.rct = Rct(cfg.weight_decay, self.cfg.batch_size_per_gpu)
+        self.rct = Rct(cfg.weight_decay, cfg.batch_size_per_gpu)
 
     def call(self, images):
         x, sc_0, sc_1, sc_2, sc_3, sc_4 = self.encoder(images)

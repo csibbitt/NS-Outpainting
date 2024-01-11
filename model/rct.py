@@ -7,12 +7,11 @@ class Rct(tf.keras.layers.Layer):
   def __init__(self, decay, batch_size_per_gpu, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-    self.output_size = 1024 #** Orig was: x.get_shape().as_list()[3]
     self.size = 512
-    self.decay = decay
     self.batch_size_per_gpu = batch_size_per_gpu
+    self.regularizer = tf.keras.regularizers.L2(decay)
 
-    self.regularizer = tf.keras.regularizers.L2(self.decay)
+    output_size = 1024
 
     encoder_lstm_cell = tf.keras.layers.LSTMCell(4 * self.size, recurrent_activation=tf.tanh, kernel_initializer=None, recurrent_initializer=None)
     self.encoder_lstm = tf.keras.layers.StackedRNNCells([encoder_lstm_cell] * 2)   #** Is this a bug in the original code, or do we mean to share weights in both cells?
@@ -26,7 +25,7 @@ class Rct(tf.keras.layers.Layer):
                     bias_initializer=None, use_bias=False)
     self.norm_1 = tfa.layers.InstanceNormalization()
 
-    self.conv_2 = tf.keras.layers.Conv2D(self.output_size, 1, strides=(1,1), activation=None,
+    self.conv_2 = tf.keras.layers.Conv2D(output_size, 1, strides=(1,1), activation=None,
                     padding='same',
                     kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)

@@ -9,7 +9,7 @@ class IdentityBlock(tf.keras.layers.Layer):
 
     filter1, filter2, filter3 = filters
 
-    self.regularizer = tf.keras.regularizers.L2(decay)
+    regularizer = tf.keras.regularizers.L2(decay)
 
     if is_relu:
       self.activation_fn=tf.nn.relu
@@ -18,20 +18,20 @@ class IdentityBlock(tf.keras.layers.Layer):
 
     self.conv_1 = tf.keras.layers.Conv2D(filter1,
                                 kernel_size=(1, 1), strides=(1, 1),
-                                kernel_regularizer=self.regularizer,
+                                kernel_regularizer=regularizer,
                                 kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False, padding='same')
     self.norm_1 = tfa.layers.InstanceNormalization()
 
     self.conv_2 = tf.keras.layers.Conv2D(filter2,
                                 (kernel_size, kernel_size),
                                 padding='same',
-                                kernel_regularizer=self.regularizer,
+                                kernel_regularizer=regularizer,
                                 kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_2 = tfa.layers.InstanceNormalization()
 
     self.conv_3 = tf.keras.layers.Conv2D(filter3,
                                 kernel_size=(1, 1),
-                                kernel_regularizer=self.regularizer,
+                                kernel_regularizer=regularizer,
                                 kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_4 = tfa.layers.InstanceNormalization()
 

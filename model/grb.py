@@ -7,7 +7,7 @@ class Grb(tf.keras.layers.Layer):
   def __init__(self, decay, filters, rate, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-    self.activation_fn = tf.nn.relu
+    activation_fn = tf.nn.relu
 
     self.atrous_a1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(3,1), dilation_rate=rate,
                                             kernel_initializer=tf.keras.initializers.GlorotNormal(),
@@ -37,18 +37,18 @@ class Grb(tf.keras.layers.Layer):
     shortcut = x
     x1 = self.atrous_a1(x)
     x1 = self.norm_a1(x1)
-    x1 = self.activation_fn(x1)
+    x1 = activation_fn(x1)
     x1 = self.atrous_a2(x1)
     x1 = self.norm_a2(x1)
 
     x2 = self.atrous_b1(x)
     x2 = self.norm_b1(x2)
-    x2 = self.activation_fn(x2)
+    x2 = activation_fn(x2)
     x2 = self.atrous_b2(x2)
     x2 = self.norm_b2(x2)
 
     x = tf.add(shortcut, x1)
     x = tf.add(x, x2)
-    x = self.activation_fn(x)
+    x = activation_fn(x)
     return x
 
