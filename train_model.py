@@ -144,8 +144,8 @@ G_opt = tf.keras.optimizers.Adam(
 D_opt = tf.keras.optimizers.Adam(
     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
 
-step = tf.Variable(0, dtype=tf.int32, trainable=False)
-ckpt_epoch = tf.Variable(0, dtype=tf.int16, trainable=False)
+step = tf.Variable(0, dtype=tf.int64, trainable=False)
+ckpt_epoch = tf.Variable(0, dtype=tf.int64, trainable=False)
 ckpt = tf.train.Checkpoint(step=step,
                             epoch=ckpt_epoch,
                             G_opt=G_opt,

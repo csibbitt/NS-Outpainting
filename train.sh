@@ -17,7 +17,7 @@ time python train_model.py \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
   --num-gpu 1 \
-  --batch-size 32
+  --batch-size 16
 ##\
 #  --batch-size 2 \
 #  --trainset-length 4 \
