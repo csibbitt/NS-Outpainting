@@ -2,9 +2,6 @@ Model
 ---
 * Performance and size
   * v2 model more than doubled in VRAM and is waaaay slower - 168s/epoch instead of 64s/epoch
-  * Suspect re-tracing due to passing shortcuts as python objects? Am I doing [].append() in tf.function mode? how?
-  * Also check rct
-* Bug saving samples
 * Multi-GPU
 * Utility to rename files with their hash
 * Bust the testset into jpgs
@@ -43,15 +40,9 @@ Iters: 235500 @ 0.2s = 47,100 (13hrs)
 WARNING:tensorflow:5 out of the last 5 calls to <function _BaseOptimizer._update_step_xla at 0x7f964062ea70> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
 
 
-Traceback (most recent call last):
-  File "/home/ubuntu/NS-Outpainting/train_model.py", line 294, in <module>
-    rec_hid = (255. * (rec_val + 1) /
-  File "/usr/local/share/miniconda/lib/python3.9/site-packages/tensorflow/python/framework/ops.py", line 437, in __getattr__
-    raise AttributeError(
-AttributeError: EagerTensor object has no attribute 'astype'. 
-        If you are looking for numpy-related methods, please run the following:
-        from tensorflow.python.ops.numpy_ops import np_config
-        np_config.enable_numpy_behavior()
+WARNING:tensorflow:5 out of the last 5 calls to <function _BaseOptimizer._update_step_xla at 0x7fe467f6a560> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+
+WARNING:tensorflow:6 out of the last 6 calls to <function _BaseOptimizer._update_step_xla at 0x7fe467f6a560> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
 
 
 2024-01-10 23:27:52.591596: I tensorflow/core/common_runtime/executor.cc:1197] [/device:CPU:0] (DEBUG INFO) Executor start aborting (this does not indicate an error and you can ignore this message): INVALID_ARGUMENT: You must feed a value for placeholder tensor 'inputs' with dtype float and shape [?,?,?,1024]

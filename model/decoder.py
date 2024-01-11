@@ -11,7 +11,7 @@ class Decoder(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.initializer = tf.keras.initializers.GlorotNormal()
+    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
     self.regularizer = tf.keras.regularizers.L2(decay)
 
     self.grb_t4 = Grb(decay, 1024, 1)
@@ -63,9 +63,10 @@ class Decoder(tf.keras.layers.Layer):
               kernel_regularizer=self.regularizer,
               bias_initializer=None, use_bias=False)
 
-  def call(self, x, shortcuts):
+  def call(self, x, sc_0, sc_1, sc_2, sc_3, sc_4):
+
     # stage -4
-    x = tf.concat([shortcuts[4], x], axis=2)
+    x = tf.concat([sc_4, x], axis=2)
 
     x = self.grb_t4(x)
     x = self.identity_block_n4b(x)
@@ -74,8 +75,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.norm_4(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
-    merge = tf.concat([shortcuts[3], sc], axis=3)
-    merge = self.shc_512(merge, shortcuts[3])
+    merge = tf.concat([sc_3, sc], axis=3)
+    merge = self.shc_512(merge, sc_3)
     merge = self.norm_4_2(merge)
     merge = tf.nn.relu(merge)
     x = tf.concat(
@@ -92,8 +93,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.norm_3(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
-    merge = tf.concat([shortcuts[2], sc], axis=3)
-    merge = self.shc_256(merge, shortcuts[2])
+    merge = tf.concat([sc_2, sc], axis=3)
+    merge = self.shc_256(merge, sc_2)
     merge = self.norm_3_2(merge)
     merge = tf.nn.relu(merge)
     x = tf.concat(
@@ -110,8 +111,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.norm_2(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
-    merge = tf.concat([shortcuts[1], sc], axis=3)
-    merge = self.shc_128(merge, shortcuts[1])
+    merge = tf.concat([sc_1, sc], axis=3)
+    merge = self.shc_128(merge, sc_1)
     merge = self.norm_2_2(merge)
     merge = tf.nn.relu(merge)
     x = tf.concat(
@@ -123,8 +124,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.norm_1(x)
     sc, kp = tf.split(x, 2, axis=2)
     sc = tf.nn.relu(sc)
-    merge = tf.concat([shortcuts[0], sc], axis=3)
-    merge = self.shc_64(merge, shortcuts[0])
+    merge = tf.concat([sc_0, sc], axis=3)
+    merge = self.shc_64(merge, sc_0)
     merge = self.norm_1_2(merge)
     merge = tf.nn.relu(merge)
     x = tf.concat(

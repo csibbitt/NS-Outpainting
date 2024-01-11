@@ -8,7 +8,7 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
     super().__init__(*args, **kwargs)
 
     self.decay = decay
-    self.initializer = tf.keras.initializers.GlorotNormal()
+    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
     self.filter1, self.filter2, self.filter3 = filters
@@ -17,7 +17,7 @@ class ConvolutionalBlock(tf.keras.layers.Layer):
                                  kernel_size=(1, 1),
                                  strides=(1, 1),
                                  kernel_regularizer=self.regularizer,
-                                 kernel_initializer=self.initializer, use_bias=False, padding='same') #** Original code had no padding here?
+                                 kernel_initializer=self.initializer, use_bias=False, padding='same')
     self.norm_2a = tfa.layers.InstanceNormalization()
 
     self.conv_2b = tf.keras.layers.Conv2D(self.filter2,

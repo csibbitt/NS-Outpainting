@@ -112,8 +112,6 @@ for i in range(num_gpu - 1):
     gpu_id = gpu_id + ',' + str(start_gpu + i + 1)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
-#tf.config.optimizer.set_jit(True)
-
 print("Start building model...")
 writer = tf.summary.create_file_writer(tensorboard_path)
 writer.init()
@@ -288,12 +286,11 @@ for epoch in range(args.epoch):
             n_batchs += 1
 
             # Save test results
-            if epoch % 100 == 0:
-
+            if epoch % 1 == 0:
                 for rec_val, test_ori in zip(reconstruction_vals, test_oris):
-                    rec_hid = (255. * (rec_val + 1) /
+                    rec_hid = (255. * (rec_val.numpy() + 1) /
                                 2.).astype(np.uint8)
-                    test_ori = (255. * (test_ori + 1) /
+                    test_ori = (255. * (test_ori.numpy() + 1) /
                                 2.).astype(np.uint8)
                     Image.fromarray(rec_hid).save(os.path.join(
                         result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.jpg'))

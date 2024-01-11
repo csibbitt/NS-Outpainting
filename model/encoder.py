@@ -9,7 +9,7 @@ class Encoder(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.initializer = tf.keras.initializers.GlorotNormal()
+    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
     self.regularizer = tf.keras.regularizers.L2(decay)
 
     self.conv_0 = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4),
@@ -40,30 +40,29 @@ class Encoder(tf.keras.layers.Layer):
     self.identity_block_4e = IdentityBlock(decay, 3, [256, 256, 1024])
 
   def call(self, x):
-    shortcuts = []
 
     # stage 1
     x = self.conv_0(x)
     x = self.norm_0(x)
     x = tf.nn.leaky_relu(x)
-    shortcuts.append(x)
+    sc_0 = x
     x = self.conv_1(x)
     x = self.norm_1(x)
     x = tf.nn.leaky_relu(x)
-    shortcuts.append(x)
+    sc_1 = x
 
     # stage 2
     x = self.convolutional_block_2a(x)
     x = self.identity_block_2b(x)
     x = self.identity_block_2c(x)
-    shortcuts.append(x)
+    sc_2 = x
 
     # stage 3
     x = self.convolutional_block_3a(x)
     x = self.identity_block_3b(x)
     x = self.identity_block_3c(x)
     x = self.identity_block_3d(x)
-    shortcuts.append(x)
+    sc_3 = x
 
     # stage 4
     x = self.convolutional_block_4a(x)
@@ -71,7 +70,7 @@ class Encoder(tf.keras.layers.Layer):
     x = self.identity_block_4c(x)
     x = self.identity_block_4d(x)
     x = self.identity_block_4e(x)
-    shortcuts.append(x)
+    sc_4 = x
 
-    return x, shortcuts
+    return x, sc_0, sc_1, sc_2, sc_3, sc_4
 

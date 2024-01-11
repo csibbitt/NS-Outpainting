@@ -10,7 +10,7 @@ class IdentityBlock(tf.keras.layers.Layer):
     filter1, filter2, filter3 = filters
 
     self.decay = decay
-    self.initializer = tf.keras.initializers.GlorotNormal()
+    self.initializer = tf.keras.initializers.GlorotNormal(seed=1)
     self.regularizer = tf.keras.regularizers.L2(self.decay)
 
     if is_relu:

@@ -44,8 +44,6 @@ class Rct(tf.keras.layers.Layer):
     x = tf.reshape(x, [-1, 4 * self.size])
     x_split = tf.split(x, 4, 0)
 
-    ys = []
-
     init_state =  self.encoder_lstm.get_initial_state(x_split[0], batch_size=self.batch_size_per_gpu, dtype=tf.float32)
     now, _state = self.encoder_lstm(x_split[0], init_state)
     now, _state = self.encoder_lstm(x_split[1], _state)
@@ -54,15 +52,15 @@ class Rct(tf.keras.layers.Layer):
 
     #predict
     now, _state = self.decoder_lstm(x_split[3], _state)
-    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    y1 = tf.reshape(now, [-1, 4, 1, self.size])
     now, _state = self.decoder_lstm(now, _state)
-    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    y2 = tf.reshape(now, [-1, 4, 1, self.size])
     now, _state = self.decoder_lstm(now, _state)
-    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    y3 = tf.reshape(now, [-1, 4, 1, self.size])
     now, _state = self.decoder_lstm(now, _state)
-    ys.append(tf.reshape(now, [-1, 4, 1, self.size]))
+    y4 = tf.reshape(now, [-1, 4, 1, self.size])
 
-    y = tf.concat(ys, axis=2)
+    y = tf.concat([y1, y2, y3, y4], axis=2)
 
     y = self.conv_2(y)
     y = self.norm_2(y)

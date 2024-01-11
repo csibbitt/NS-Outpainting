@@ -15,7 +15,7 @@ class Generator(tf.keras.Model):
         self.rct = Rct(cfg.weight_decay, self.cfg.batch_size_per_gpu)
 
     def call(self, images):
-        x, shortcuts = self.encoder(images)
+        x, sc_0, sc_1, sc_2, sc_3, sc_4 = self.encoder(images)
         x = self.rct(x)
-        recon = self.decoder(x, shortcuts)
+        recon = self.decoder(x, sc_0, sc_1, sc_2, sc_3, sc_4)
         return tf.nn.tanh(recon)
