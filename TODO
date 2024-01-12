@@ -1,5 +1,6 @@
 Model
 ---
+* Get graph data back into tensorboad
 * Performance and size
   * v2 model more than doubled in VRAM and is waaaay slower - 168s/epoch instead of 64s/epoch
 * Multi-GPU

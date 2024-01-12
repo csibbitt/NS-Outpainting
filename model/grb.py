@@ -11,7 +11,7 @@ class Grb(tf.keras.layers.Layer):
                                             kernel_initializer=tf.keras.initializers.GlorotNormal(),
                                             kernel_regularizer=tf.keras.regularizers.L2(decay),
                                             padding='SAME')
-    self.norm_a1 = tfa.layers.InstanceNormalization()  #** In the original code, there is just one IN()
+    self.norm_a1 = tfa.layers.InstanceNormalization()
 
     self.atrous_a2 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(1,7), dilation_rate=rate,
                                         kernel_initializer=tf.keras.initializers.GlorotNormal(),

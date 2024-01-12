@@ -124,13 +124,13 @@ if args.deterministic_seed != 0:
 with tf.device('/cpu:0'):
     trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
     trainset = trainset.shuffle(args.trainset_length)
-    trainset = trainset.map(parse_trainset, num_parallel_calls=args.workers)
-    trainset = trainset.batch(args.batch_size, drop_remainder=True).repeat()
+    trainset = trainset.map(parse_trainset, num_parallel_calls=tf.data.AUTOTUNE)
+    trainset = trainset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
     train_im = iter(trainset)
 
     testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-    testset = testset.map(parse_testset, num_parallel_calls=args.workers)
-    testset = testset.batch(args.batch_size, drop_remainder=True).repeat()
+    testset = testset.map(parse_testset, num_parallel_calls=tf.data.AUTOTUNE)
+    testset = testset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
     test_im = iter(testset)
 
 generator = Generator(args)
@@ -159,7 +159,7 @@ ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep
 apply_grads_g = tf.Variable(False, dtype=tf.bool)
 apply_grads_d = tf.Variable(False, dtype=tf.bool)
 
-@tf.function
+@tf.function(jit_compile=True)
 def fwd(groundtruth):
     with tf.GradientTape() as g_G, tf.GradientTape() as g_D:
         g_G.watch(groundtruth)
@@ -213,12 +213,12 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
             gtimer = Timer('G warmup')
             print('Start pretraining G!')
             lambda_rec.assign(1.)
+            apply_grads_g.assign(True)
             for t in range(args.warmup_steps):
                 if t % 20 == 0:
                     print("Step:", t)
                 images = train_im.get_next()
 
-                apply_grads_g.assign(True)
                 loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
             gtimer.stop()
             print('Pre-train G Done!')
@@ -231,12 +231,13 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
             n_cir = args.critic_steps
 
         # Train D
+        apply_grads_g.assign(False)
+        apply_grads_d.assign(True)
         for t in range(n_cir):
             images =  train_im.get_next()
             if len(images) < args.batch_size:
                 images =  train_im.get_next()
-            apply_grads_g.assign(False)
-            apply_grads_d.assign(True)
+
             loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
 
         # Train G
@@ -273,11 +274,12 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
         d_vals = 0
         ag_vals = 0
         n_batchs = 0
+        apply_grads_g.assign(False)
+        apply_grads_d.assign(False)
+        eval_timer = Timer('eval')
         for _ in range(int(args.testset_length / args.batch_size)):
             test_oris = test_im.get_next()
 
-            apply_grads_g.assign(False)
-            apply_grads_d.assign(False)
             g_val, ag_val, d_val, loss_rec, grad_g, grad_d, reconstruction_vals = fwd(test_oris)
 
             g_vals += g_val
@@ -287,6 +289,7 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
 
             # Save test results
             if epoch % 100 == 0:
+                rtimer = Timer('results')
                 for rec_val, test_ori in zip(reconstruction_vals, test_oris):
                     rec_hid = (255. * (rec_val.numpy() + 1) /
                                 2.).astype(np.uint8)
@@ -298,6 +301,7 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
                         Image.fromarray(test_ori).save(
                             os.path.join(result_path, 'img_' + str(ii) + '.' + str(int(iters / 100)) + '.ori.jpg'))
                     ii += 1
+                rtimer.stop()
         g_vals /= n_batchs
         d_vals /= n_batchs
         ag_vals /= n_batchs
@@ -313,8 +317,9 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
         writer.flush()
 
         if np.isnan(g_val):
-            print("NaN detected!!");
+            print("NaN detected!!")
             sys.exit()
+        eval_timer.stop()
     etimer.stop()
 
 #cProfile.run('main()')

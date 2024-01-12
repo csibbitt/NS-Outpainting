@@ -9,6 +9,12 @@ I have done a partial training run (to Step ~75,000 before hitting the "NaN Dete
 
 The model is being used as the core of an art project that makes never-ending landscape panoramas.
 
+## Known deviations for original model
+
+I've probably made a mistake or two somewhere, but have tried to keep all the parameters and configuration of the model identical to the research paper, except for the following intentional changes, so far:
+
+* Many blocks (convolution, encoder, decoder, grb, identity) shared a single initializer within the block, leading (I think?) to convolution kernels in the block all being initialized the same. I've changed this so that each convolution layer gets it's own initializer. It's possible the original code worked this same way and the fix is an artifact of porting to V2? I haven't double checked.
+
 # Very Long Natural Scenery Image Prediction by Outpainting (NS-Outpainting)
 A neural architecture for scenery image outpaiting ([ICCV 2019](http://openaccess.thecvf.com/content_ICCV_2019/papers/Yang_Very_Long_Natural_Scenery_Image_Prediction_by_Outpainting_ICCV_2019_paper.pdf)), implemented in [TensorFlow](http://www.tensorflow.org).
 

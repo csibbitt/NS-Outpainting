@@ -1,67 +1,87 @@
+## Local (bs=16 warmup=40)
 
 
-Before TF2
-===========
-
-Jit disabled
-==
-Iter: 0 loss_g: 0.9398291 loss_d: -13.464857 loss_adv_g: 4.430419
-iter lap taking : 51s
-epoch 0 taking : 64s
-=========================================================================
-loss_g: 0.9079557 loss_d: -34.546814 loss_adv_g: 10.233949
-=========================================================================
-epoch 1 taking : 45s
-=========================================================================
-loss_g: 0.9012619 loss_d: -60.361237 loss_adv_g: 14.673199
-=========================================================================
-epoch 2 taking : 15s
-
-
-Before changing JIT level (removing v1 session config)
-==
-
-Iter: 0 loss_g: 0.9397899 loss_d: -13.235907 loss_adv_g: 4.2119856
-iter lap taking : 221s
-epoch 0 taking : 231s
-=========================================================================
-loss_g: 0.9092859 loss_d: -34.52523 loss_adv_g: 10.423411
-=========================================================================
-epoch 1 taking : 157s
-=========================================================================
-loss_g: 0.90631914 loss_d: -63.947758 loss_adv_g: 17.314487
-=========================================================================
-epoch 2 taking : 43s
-
-
-Before the Adam changes
-==
-
-Iter: 0 loss_g: 0.939791 loss_d: -13.23538 loss_adv_g: 4.21256
+### b4cb86 (w/jit_compile=True)
+Step: 20
+G warmup taking : 220s
+Pre-train G Done!
+Iter: 0 loss_g: 0.6830256 loss_d: -7.9450936 loss_adv_g: 9.560258 loss_rec: 0.1564484
 iter lap taking : 239s
-epoch 0 taking : 249s
-=========================================================================
-loss_g: 0.9100172 loss_d: -33.54506 loss_adv_g: 10.552801
-=========================================================================
-epoch 1 taking : 173s
-=========================================================================
-loss_g: 0.90754557 loss_d: -65.53219 loss_adv_g: 17.989595
-=========================================================================
-epoch 2 taking : 44s
+Iter: 25 loss_g: 0.82578635 loss_d: -207.01042 loss_adv_g: 114.0562 loss_rec: 0.09775453
+iter lap taking : 1185s
+Iter: 50 loss_g: 0.8153295 loss_d: -162.0005 loss_adv_g: 110.30807 loss_rec: 0.10196309
+iter lap taking : 58s
+Iter: 75 loss_g: 0.7275607 loss_d: -167.17537 loss_adv_g: 69.97606 loss_rec: 0.103666596
+iter lap taking : 59s
+Iter: 100 loss_g: 0.7310436 loss_d: -108.363914 loss_adv_g: 91.76884 loss_rec: 0.07359828
+iter lap taking : 59s
+Iter: 125 loss_g: 0.6830727 loss_d: -104.05797 loss_adv_g: 72.23005 loss_rec: 0.075223744
+iter lap taking : 59s
 
 
--=-=-=-=-
+### b4cb86 (w/ jit_compile=False)
+Step: 20
+G warmup taking : 162s
+Pre-train G Done!
+Iter: 0 loss_g: 0.6634284 loss_d: -10.293717 loss_adv_g: 7.5452805 loss_rec: 0.14014943
+iter lap taking : 188s
+Iter: 25 loss_g: 0.92089003 loss_d: -251.75528 loss_adv_g: 152.86407 loss_rec: 0.114254385
+iter lap taking : 563s
+Iter: 50 loss_g: 0.80974066 loss_d: -179.53879 loss_adv_g: 106.07966 loss_rec: 0.103827685
+iter lap taking : 77s
+Iter: 75 loss_g: 0.7937649 loss_d: -145.7091 loss_adv_g: 105.46583 loss_rec: 0.09835383
+iter lap taking : 77s
+Iter: 100 loss_g: 0.767198 loss_d: -131.105 loss_adv_g: 104.07619 loss_rec: 0.085873276
+iter lap taking : 77s
+Iter: 125 loss_g: 0.7033896 loss_d: -142.90497 loss_adv_g: 64.840324 loss_rec: 0.11333703
+iter lap taking : 77s
 
-Before the regularization loss changes
-==
-Iter: 0 loss_g: 0.4186737 loss_d: -14.674999 loss_adv_g: 4.340949
-iter lap taking : 208s
-epoch 0 taking : 217s
+
+
+### b4cb86ea613561911af9f6c7758192ace503df56
+
+
+
+
+## Genesis (bs=32)
+
+### b4cb86ea613561911af9f6c7758192ace503df56
+
+=========================================================================                                                                                  [38/1458]
+loss_g: 0.26621297 loss_d: -10.634494 loss_adv_g: 113.819405                                                                                                        
 =========================================================================
-loss_g: 0.388884 loss_d: -37.970955 loss_adv_g: 10.294012
+epoch 165 taking : 165s                                                                                                                                             
+Iter: 26075 loss_g: 0.26650077 loss_d: -14.32047 loss_adv_g: 115.56085 loss_rec: 0.019716414
+iter lap taking : 12s                                                                                                                                               
+Iter: 26100 loss_g: 0.2314346 loss_d: -16.069883 loss_adv_g: 97.68532 loss_rec: 0.020439522
+iter lap taking : 22s                                                                                                                                               
+Iter: 26125 loss_g: 0.25422037 loss_d: -12.836208 loss_adv_g: 107.29562 loss_rec: 0.024017416
+iter lap taking : 22s                                                             
+Iter: 26150 loss_g: 0.23191662 loss_d: -13.233277 loss_adv_g: 97.93453 loss_rec: 0.020316835
+iter lap taking : 22s                                                             
+Iter: 26175 loss_g: 0.27383322 loss_d: -8.6913805 loss_adv_g: 120.60307 loss_rec: 0.016918425
+iter lap taking : 22s                                                                                                                                               
+Iter: 26200 loss_g: 0.2486884 loss_d: -15.601173 loss_adv_g: 107.92409 loss_rec: 0.017117918
+iter lap taking : 22s                                                                                                                                               
 =========================================================================
-epoch 1 taking : 135s
+loss_g: 0.25660363 loss_d: -8.148185 loss_adv_g: 108.108864                                                                                                         
 =========================================================================
-loss_g: 0.38278955 loss_d: -61.52313 loss_adv_g: 15.559732
+epoch 166 taking : 159s                                                                                                                                             
+Iter: 26225 loss_g: 0.2504073 loss_d: -11.237053 loss_adv_g: 107.42024 loss_rec: 0.019816892
+iter lap taking : 6s                                                                                                                                                
+Iter: 26250 loss_g: 0.26948875 loss_d: -8.892166 loss_adv_g: 116.55327 loss_rec: 0.020757826
+iter lap taking : 22s                                                                                                                                               
+Iter: 26275 loss_g: 0.26781335 loss_d: -12.006148 loss_adv_g: 116.965454 loss_rec: 0.018244008
+iter lap taking : 22s                                                             
+Iter: 26300 loss_g: 0.26204237 loss_d: -12.499929 loss_adv_g: 115.2745 loss_rec: 0.015910672
+iter lap taking : 22s                                                             
+Iter: 26325 loss_g: 0.26405153 loss_d: -8.618835 loss_adv_g: 112.5758 loss_rec: 0.0233278
+iter lap taking : 22s                                                                                                                                               
+Iter: 26350 loss_g: 0.28379932 loss_d: -6.825729 loss_adv_g: 127.27213 loss_rec: 0.013725194
+iter lap taking : 22s                                                                                                                                               
+Iter: 26375 loss_g: 0.27628934 loss_d: -7.0314865 loss_adv_g: 121.02027 loss_rec: 0.018723277
+iter lap taking : 22s                                                                                                                                               
 =========================================================================
-epoch 2 taking : 40s
+loss_g: 0.27711782 loss_d: -7.45419 loss_adv_g: 119.25163                                                                                                           
+=========================================================================
+epoch 167 taking : 158s
