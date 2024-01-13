@@ -1,14 +1,16 @@
 Model
 ---
 * Get graph data back into tensorboad
+* Bust the testset into jpgs
 * Performance and size
   * v2 model more than doubled in VRAM and is waaaay slower - 168s/epoch instead of 64s/epoch
 * Multi-GPU
 * Utility to rename files with their hash
-* Bust the testset into jpgs
 * Figure out this NaN problem
   * Suspect gradient explosion, try gradient clipping?
   * Can I load a broken checkpoint and find the source?
+  * check_numerics
+  * debuggerV2
 * Full TF2 validation training
 * Refactor to tf.Loss? (do I need multiples?)
 * Huggingface compatibility

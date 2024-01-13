@@ -9,6 +9,9 @@ class Encoder(tf.keras.layers.Layer):
 
   def __init__(self, decay, *args, **kwargs):
     super().__init__(*args, **kwargs)
+
+    self.decay = decay
+
     regularizer = tf.keras.regularizers.L2(decay)
 
     self.conv_0 = tf.keras.layers.Conv2D(filters=64, kernel_size=(4, 4),
@@ -37,6 +40,11 @@ class Encoder(tf.keras.layers.Layer):
     self.identity_block_4c = IdentityBlock(decay, 3, [256, 256, 1024])
     self.identity_block_4d = IdentityBlock(decay, 3, [256, 256, 1024])
     self.identity_block_4e = IdentityBlock(decay, 3, [256, 256, 1024])
+
+  def get_config(self):
+      config = super().get_config()
+      config.update({"decay": self.decay})
+      return config
 
   def call(self, x):
 

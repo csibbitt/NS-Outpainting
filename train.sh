@@ -17,12 +17,11 @@ time python train_model.py \
   --testset-path ./tf_dataset_new/testset.tfr \
   --log-path ./logs/ \
   --num-gpu 1 \
-  --batch-size 16 \
-  --warmup-steps 40
-  # --batch-size 2 \
-  # --trainset-length 4 \
-  # --testset-length 4 \
-  # --epoch 3 \
-  # --warmup-steps 1 \
+\
+  --batch-size 2 \
+  --trainset-length 4 \
+  --testset-length 4 \
+  --epoch 3 \
+  --warmup-steps 40 \
   # --deterministic-seed 1 \
   # --checkpoint-path logs/20240109/1900/checkpoint/ckpt-8

@@ -13,6 +13,8 @@ class Decoder(tf.keras.layers.Layer):
     super().__init__(*args, **kwargs)
     regularizer = tf.keras.regularizers.L2(decay)
 
+    self.decay = decay
+
     self.grb_t4 = Grb(decay, 1024, 1)
     self.identity_block_n4b = IdentityBlock(decay, 3, [256, 256, 1024], is_relu=True)
     self.identity_block_n4c = IdentityBlock(decay,3, [256, 256, 1024], is_relu=True)
@@ -61,6 +63,11 @@ class Decoder(tf.keras.layers.Layer):
               activation=None, padding='same', kernel_initializer=tf.keras.initializers.GlorotNormal(),
               kernel_regularizer=regularizer,
               bias_initializer=None, use_bias=False)
+
+  def get_config(self):
+      config = super().get_config()
+      config.update({"decay": self.decay})
+      return config
 
   def call(self, x, sc_0, sc_1, sc_2, sc_3, sc_4):
 

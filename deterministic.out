@@ -1,6 +1,25 @@
 ## Local (bs=16 warmup=40)
 
 
+### 1bf8ca90
+
+Step: 20
+G warmup taking : 217s
+Pre-train G Done!
+Iter: 0 loss_g: 0.64762634 loss_d: -12.48837 loss_adv_g: 10.716345 loss_rec: 0.117818646
+iter lap taking : 235s
+Iter: 25 loss_g: 0.75491416 loss_d: -160.5819 loss_adv_g: 81.8733 loss_rec: 0.09006286
+iter lap taking : 456s
+Iter: 50 loss_g: 0.8563268 loss_d: -189.22096 loss_adv_g: 122.59898 loss_rec: 0.11680102
+iter lap taking : 61s
+Iter: 75 loss_g: 0.83312756 loss_d: -167.62372 loss_adv_g: 118.11866 loss_rec: 0.11106263
+iter lap taking : 61s
+Iter: 100 loss_g: 0.7798114 loss_d: -150.66791 loss_adv_g: 109.3935 loss_rec: 0.08591869
+iter lap taking : 61s
+Iter: 125 loss_g: 0.70869356 loss_d: -101.43211 loss_adv_g: 78.45772 loss_rec: 0.08873668
+iter lap taking : 61s
+
+
 ### b4cb86 (w/jit_compile=True)
 Step: 20
 G warmup taking : 220s

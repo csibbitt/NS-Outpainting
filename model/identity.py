@@ -7,6 +7,10 @@ class IdentityBlock(tf.keras.layers.Layer):
   def __init__(self, decay, kernel_size, filters, is_relu=False, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+    self.decay = decay
+    self.kernel_size = kernel_size
+    self.filters = filters
+
     filter1, filter2, filter3 = filters
 
     regularizer = tf.keras.regularizers.L2(decay)
@@ -34,6 +38,13 @@ class IdentityBlock(tf.keras.layers.Layer):
                                 kernel_regularizer=regularizer,
                                 kernel_initializer=tf.keras.initializers.GlorotNormal(), use_bias=False)
     self.norm_4 = tfa.layers.InstanceNormalization()
+
+  def get_config(self):
+      config = super().get_config()
+      config.update({"decay": self.decay,
+                      "kernel_size": self.kernel_size,
+                      "filters": self.filters})
+      return config
 
   def call(self, X_input):
 

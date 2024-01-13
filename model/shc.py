@@ -7,6 +7,9 @@ class Shc(tf.keras.layers.Layer):
   def __init__(self, decay, channels, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+    self.decay = decay
+    self.channels = channels
+
     regularizer = tf.keras.regularizers.L2(decay)
 
     self.conv_1 = tf.keras.layers.Conv2D(channels / 2, 1, strides=(1,1), activation=tf.nn.relu,
@@ -23,6 +26,12 @@ class Shc(tf.keras.layers.Layer):
                   padding='same', use_bias=False,
                   kernel_regularizer=regularizer, kernel_initializer=None)
     self.norm_3 = tfa.layers.InstanceNormalization()
+
+  def get_config(self):
+      config = super().get_config()
+      config.update({"decay": self.decay,
+                      "channels": self.channels})
+      return config
 
   def call(self, x, shortcut):
 

@@ -8,6 +8,7 @@ class Rct(tf.keras.layers.Layer):
     super().__init__(*args, **kwargs)
 
     self.size = 512
+    self.decay = decay
     self.batch_size_per_gpu = batch_size_per_gpu
     self.regularizer = tf.keras.regularizers.L2(decay)
 
@@ -30,6 +31,11 @@ class Rct(tf.keras.layers.Layer):
                     kernel_regularizer=self.regularizer, kernel_initializer=None,
                     bias_initializer=None, use_bias=False)
     self.norm_2 = tfa.layers.InstanceNormalization()
+
+  def get_config(self):
+    config = super().get_config()
+    config.update({"decay": self.decay, "batch_size_per_gpu": self.batch_size_per_gpu})
+    return config
 
   def call(self, x):
 

@@ -7,6 +7,9 @@ class Grb(tf.keras.layers.Layer):
   def __init__(self, decay, filters, rate, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+    self.decay = decay
+    self.filters = filters
+
     self.atrous_a1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=(3,1), dilation_rate=rate,
                                             kernel_initializer=tf.keras.initializers.GlorotNormal(),
                                             kernel_regularizer=tf.keras.regularizers.L2(decay),
@@ -30,6 +33,12 @@ class Grb(tf.keras.layers.Layer):
                                             kernel_regularizer=tf.keras.regularizers.L2(decay),
                                             padding='SAME')
     self.norm_b2 = tfa.layers.InstanceNormalization()
+
+  def get_config(self):
+      config = super().get_config()
+      config.update({"decay": self.decay,
+                      "filters": self.filters})
+      return config
 
   def call(self, x):
     activation_fn = tf.nn.relu

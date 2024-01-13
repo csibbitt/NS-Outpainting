@@ -115,6 +115,7 @@ args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 print("Start building model...")
 writer = tf.summary.create_file_writer(tensorboard_path)
 writer.init()
+writer.set_as_default()
 
 if args.deterministic_seed != 0:
     tf.keras.utils.set_random_seed(args.deterministic_seed)
@@ -133,7 +134,7 @@ with tf.device('/cpu:0'):
     testset = testset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
     test_im = iter(testset)
 
-generator = Generator(args)
+generator = Generator(args.weight_decay, args.batch_size_per_gpu)
 loss = Loss(args)
 
 learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
@@ -187,10 +188,10 @@ def fwd(groundtruth):
 
     return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
 
+fwd(tf.zeros([args.batch_size_per_gpu, 128, 256, 3])) # Run one forward pass to construct all vars for .assert_consumed() and precompile the graph
 iters = 0
 if args.checkpoint_path is not None:
     print('Start restore checkpoint...')
-    fwd(tf.zeros([args.batch_size_per_gpu, 128, 256, 3])) # Run a forward pass to construct all vars for .assert_consumed()
     status = ckpt.restore(args.checkpoint_path).assert_consumed()
     iters = step.numpy()
     print('Done.')
@@ -214,12 +215,14 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
             print('Start pretraining G!')
             lambda_rec.assign(1.)
             apply_grads_g.assign(True)
+            tf.profiler.experimental.start(tensorboard_path)
             for t in range(args.warmup_steps):
-                if t % 20 == 0:
+                with tf.profiler.experimental.Trace("G warmup", step_num=t, _r=1):
+                    images = train_im.get_next()
+                    loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
+                if t % 20 == 0 and t != 0:
                     print("Step:", t)
-                images = train_im.get_next()
-
-                loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
+                    tf.profiler.experimental.stop()
             gtimer.stop()
             print('Pre-train G Done!')
 
