@@ -12,13 +12,13 @@ class Loss():
 
     def masked_reconstruction_loss(self, gt, recon):
         loss_recon = tf.square(gt - recon)
-        mask_values = np.ones((128, 128))
+        mask_values = np.ones((128, 128), dtype=np.float16)
         for j in range(128):
             mask_values[:, j] = (1. + math.cos(math.pi * j / 127.0)) * 0.5
         mask_values = np.expand_dims(mask_values, 0)
         mask_values = np.expand_dims(mask_values, 3)
-        mask1 = tf.constant(1, dtype=tf.float32, shape=[1, 128, 128, 1])
-        mask2 = tf.constant(mask_values, dtype=tf.float32, shape=[1, 128, 128, 1])
+        mask1 = tf.constant(1, shape=[1, 128, 128, 1], dtype=tf.float16)
+        mask2 = tf.constant(mask_values, shape=[1, 128, 128, 1])
         mask = tf.concat([mask1, mask2], axis=2)
         loss_recon = loss_recon * mask
         loss_recon = tf.reduce_mean(input_tensor=loss_recon)
@@ -31,7 +31,7 @@ class Loss():
         loss_adv_D = - tf.reduce_mean(input_tensor=adversarial_pos - adversarial_neg)
 
         differences = fake - real
-        alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1])
+        alpha = tf.random.uniform(shape=[self.cfg.batch_size_per_gpu, 1, 1, 1], dtype=tf.float16)
         interpolates = real + tf.multiply(alpha, differences)
         with tf.GradientTape() as g:
             g.watch(interpolates)

@@ -49,7 +49,7 @@ class Rct(tf.keras.layers.Layer):
     x = tf.reshape(x, [-1, 4 * self.size])
     x_split = tf.split(x, 4, 0)
 
-    init_state =  self.encoder_lstm.get_initial_state(x_split[0], batch_size=self.batch_size_per_gpu, dtype=tf.float32)
+    init_state =  self.encoder_lstm.get_initial_state(x_split[0], batch_size=self.batch_size_per_gpu, dtype=tf.float16)
     now, _state = self.encoder_lstm(x_split[0], init_state)
     now, _state = self.encoder_lstm(x_split[1], _state)
     now, _state = self.encoder_lstm(x_split[2], _state)

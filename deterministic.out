@@ -1,5 +1,22 @@
 ## Local (bs=16 warmup=40)
 
+### 194b9cda (mixed precision going slower; 13% on-device?!?)
+
+G warmup taking : 28s
+Pre-train G Done!
+Iter: 0 loss_g: 26910.0 loss_d: -512.5 loss_adv_g: 9.05 loss_rec: 0.3948
+iter lap taking : 48s
+Iter: 25 loss_g: 26420.0 loss_d: -3008.0 loss_adv_g: 82.6 loss_rec: 0.2404
+iter lap taking : 471s
+Iter: 50 loss_g: 25940.0 loss_d: -2226.0 loss_adv_g: 53.38 loss_rec: 0.288
+iter lap taking : 64s
+Iter: 75 loss_g: 25400.0 loss_d: -1912.0 loss_adv_g: 44.53 loss_rec: 0.2969
+iter lap taking : 64s
+Iter: 100 loss_g: 25650.0 loss_d: -1871.0 loss_adv_g: 54.75 loss_rec: 0.2957
+iter lap taking : 64s
+Iter: 125 loss_g: 23920.0 loss_d: -2104.0 loss_adv_g: 51.12 loss_rec: 0.2632
+iter lap taking : 64s
+
 
 ### 1bf8ca90
 

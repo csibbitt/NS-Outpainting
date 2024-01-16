@@ -3,6 +3,7 @@ from glob import glob
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+from tensorflow.keras import mixed_precision
 from model.generator import Generator
 from model.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
@@ -105,6 +106,7 @@ else:
     os.makedirs(tensorboard_path)
 
 # prepare gpu
+mixed_precision.set_global_policy('mixed_float16')
 num_gpu = args.num_gpu
 start_gpu = args.start_gpu
 gpu_id = str(start_gpu)
@@ -112,7 +114,6 @@ for i in range(num_gpu - 1):
     gpu_id = gpu_id + ',' + str(start_gpu + i + 1)
 args.batch_size_per_gpu = int(args.batch_size / args.num_gpu)
 
-print("Start building model...")
 writer = tf.summary.create_file_writer(tensorboard_path)
 writer.init()
 writer.set_as_default()
@@ -122,28 +123,29 @@ if args.deterministic_seed != 0:
     tf.random.set_seed(args.deterministic_seed)
     tf.config.experimental.enable_op_determinism()
 
-with tf.device('/cpu:0'):
-    trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
-    trainset = trainset.shuffle(args.trainset_length)
-    trainset = trainset.map(parse_trainset, num_parallel_calls=tf.data.AUTOTUNE)
-    trainset = trainset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
-    train_im = iter(trainset)
+trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
+trainset = trainset.shuffle(args.trainset_length)
+trainset = trainset.map(parse_trainset, num_parallel_calls=tf.data.AUTOTUNE)
+trainset = trainset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
+train_im = iter(trainset)
 
-    testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-    testset = testset.map(parse_testset, num_parallel_calls=tf.data.AUTOTUNE)
-    testset = testset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
-    test_im = iter(testset)
+testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
+testset = testset.map(parse_testset, num_parallel_calls=tf.data.AUTOTUNE)
+testset = testset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
+test_im = iter(testset)
 
+print("Start building G() and loss models...")
 generator = Generator(args.weight_decay, args.batch_size_per_gpu)
 loss = Loss(args)
+print("Done building G() and loss models.")
 
 learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
-lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float32, shape=[])
+lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float16, shape=[])
 
-G_opt = tf.keras.optimizers.Adam(
-    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
-D_opt = tf.keras.optimizers.Adam(
-    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
+G_opt = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08))
+D_opt = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(
+    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08))
 
 step = tf.Variable(0, dtype=tf.int64, trainable=False)
 ckpt_epoch = tf.Variable(0, dtype=tf.int64, trainable=False)
@@ -155,7 +157,6 @@ ckpt = tf.train.Checkpoint(step=step,
                             discrim_g=loss.discrim_g,
                             discrim_l=loss.discrim_l)
 ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
-
 
 apply_grads_g = tf.Variable(False, dtype=tf.bool)
 apply_grads_d = tf.Variable(False, dtype=tf.bool)
@@ -172,23 +173,27 @@ def fwd(groundtruth):
         loss_rec = loss.masked_reconstruction_loss(groundtruth, reconstruction)  #** Could skip this when only training D()
         loss_adv_G, loss_adv_D = loss.global_and_local_adv_loss(groundtruth, reconstruction) #** Could skip this during G() warmup
 
-        loss_G = loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + tf.reduce_sum(generator.losses)
-        loss_D = loss_adv_D
+        loss_G = G_opt.get_scaled_loss(loss_adv_G * (1 - lambda_rec) + loss_rec * lambda_rec + tf.reduce_sum(tf.cast(generator.losses, tf.float16)))
+        loss_D = D_opt.get_scaled_loss(loss_adv_D)
 
         var_G = generator.trainable_variables
         var_D = loss.discrim_l.trainable_variables + loss.discrim_g.trainable_variables
 
-    grad_g = G_opt.compute_gradients(loss_G, var_G, tape=g_G)
-    grad_d = D_opt.compute_gradients(loss_D, var_D, tape=g_D)
+    grad_g = g_G.gradient(loss_G, var_G)
+    grad_d = g_D.gradient(loss_D, var_D)
 
     if(apply_grads_g.value()):
-        G_opt.apply_gradients(grad_g)
+        G_opt.apply_gradients(zip(G_opt.get_unscaled_gradients(grad_g), var_G))
     if(apply_grads_d.value()):
-        D_opt.apply_gradients(grad_d)
+        D_opt.apply_gradients(zip(D_opt.get_unscaled_gradients(grad_d), var_D))
 
     return loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction
 
-fwd(tf.zeros([args.batch_size_per_gpu, 128, 256, 3])) # Run one forward pass to construct all vars for .assert_consumed() and precompile the graph
+ltimer = Timer("Initial forward pass")
+# Run one forward pass to construct all vars for .assert_consumed(), precompile the graph, and get the input prefetch flowing
+fwd(train_im.get_next())
+ltimer.stop()
+
 iters = 0
 if args.checkpoint_path is not None:
     print('Start restore checkpoint...')

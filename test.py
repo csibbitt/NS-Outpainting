@@ -44,8 +44,8 @@ def catch_and_raise_created_variables():
 # # with random_tool.scope():
 
 
-learning_rate = tf.Variable(0.0001, dtype=tf.float32, shape=[])
-lambda_rec =  tf.Variable(0.998, dtype=tf.float32, shape=[])
+learning_rate = tf.Variable(0.0001, dtype=tf.float16, shape=[])
+lambda_rec =  tf.Variable(0.998, dtype=tf.float16, shape=[])
 
 G_opt = tf.keras.optimizers.Adam(
     learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08)
@@ -102,13 +102,6 @@ print(loss_G.numpy())
 
 # recon = G(inputs)
 
-# # tf.Tensor([ 0.48804274 -0.9505034   0.24720697], shape=(3,), dtype=float32)
-# # tf.Tensor([ 0.11747289 -0.07015078  0.36418724], shape=(3,), dtype=float32)
-# # tf.Tensor([-0.04279513 -0.03300458 -0.18818763], shape=(3,), dtype=float32)
-# # 336
-# print(recon[0][0][0])
-# print(recon[16][64][64])
-# print(recon[-1][-1][-1])
 # print(len(G.trainable_variables) + len(D_l.trainable_variables) + len(D_g.trainable_variables))
 
             # Note that each grad_and_vars looks like the following:

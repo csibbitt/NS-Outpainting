@@ -19,8 +19,6 @@ time python train_model.py \
   --num-gpu 1 \
 \
   --batch-size 2 \
-  --trainset-length 4 \
-  --testset-length 4 \
   --epoch 3 \
   --warmup-steps 40 \
   # --deterministic-seed 1 \
