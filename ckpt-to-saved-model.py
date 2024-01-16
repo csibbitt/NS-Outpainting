@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-import tensorflow as tf
 import argparse
 
-from model.generator import Generator
+
 
 parser = argparse.ArgumentParser(description='Convert a checkpoint to saved generator model')
 parser.add_argument('filename')
@@ -10,8 +9,10 @@ parser.add_argument('-o', '--output-dir', default='saved-model.tf', help='defaul
 
 args = parser.parse_args()
 
-cfg = type('cfg', (), {'weight_decay': 0.00002, 'batch_size_per_gpu': 1})()
-generator = Generator(cfg, name='model')
+import tensorflow as tf
+from model.generator import Generator
+
+generator = Generator(name='model', decay=0.00002, batch_size_per_gpu=1)
 generator(tf.ones([1,128,128,3]))
 
 print('Loading checkpoint')
