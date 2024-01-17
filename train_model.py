@@ -8,30 +8,10 @@ from model.generator import Generator
 from model.loss import Loss
 from dataset.parse import parse_trainset, parse_testset
 import argparse
-import time
 import sys
+from utils.timer import Timer
 
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
-class Timer():
-    def __init__(self, label):
-        self.label = label
-        self.start = time.perf_counter()
-        self.lapstart = self.start
-
-    def stop(self):
-        print('{} taking : {}s'.format(self.label, int(time.perf_counter() - self.start)))
-
-    def lap(self):
-        now = time.perf_counter()
-        print('{} lap taking : {}s'.format(self.label, int(now - self.lapstart)))
-        self.lapstart = now
-
-    def reset(self):
-        self.start = time.perf_counter()
-        self.lap = self.start
-
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 parser = argparse.ArgumentParser(description='Model training.')
 # experiment
@@ -123,43 +103,47 @@ if args.deterministic_seed != 0:
     tf.random.set_seed(args.deterministic_seed)
     tf.config.experimental.enable_op_determinism()
 
-trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
-trainset = trainset.shuffle(args.trainset_length)
-trainset = trainset.map(parse_trainset, num_parallel_calls=tf.data.AUTOTUNE)
-trainset = trainset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
-train_im = iter(trainset)
+strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")
 
-testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
-testset = testset.map(parse_testset, num_parallel_calls=tf.data.AUTOTUNE)
-testset = testset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
-test_im = iter(testset)
+with strategy.scope():
 
-print("Start building G() and loss models...")
-generator = Generator(args.weight_decay, args.batch_size_per_gpu)
-loss = Loss(args)
-print("Done building G() and loss models.")
+    trainset = tf.data.TFRecordDataset(filenames=[args.trainset_path])
+    trainset = trainset.shuffle(args.trainset_length)
+    trainset = trainset.map(parse_trainset, num_parallel_calls=tf.data.AUTOTUNE)
+    trainset = trainset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
+    train_im = iter(trainset)
 
-learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
-lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float16, shape=[])
+    testset = tf.data.TFRecordDataset(filenames=[args.testset_path])
+    testset = testset.map(parse_testset, num_parallel_calls=tf.data.AUTOTUNE)
+    testset = testset.batch(args.batch_size, drop_remainder=True).prefetch(2).repeat()
+    test_im = iter(testset)
 
-G_opt = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(
-    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08))
-D_opt = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(
-    learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08))
+    print("Start building G() and loss models...")
+    generator = Generator(args.weight_decay, args.batch_size_per_gpu)
+    loss = Loss(args)
+    print("Done building G() and loss models.")
 
-step = tf.Variable(0, dtype=tf.int64, trainable=False)
-ckpt_epoch = tf.Variable(0, dtype=tf.int64, trainable=False)
-ckpt = tf.train.Checkpoint(step=step,
-                            epoch=ckpt_epoch,
-                            G_opt=G_opt,
-                            D_opt=D_opt,
-                            generator=generator,
-                            discrim_g=loss.discrim_g,
-                            discrim_l=loss.discrim_l)
-ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
+    learning_rate = tf.Variable(args.base_lr, dtype=tf.float32, shape=[])
+    lambda_rec =  tf.Variable(args.lambda_rec, dtype=tf.float16, shape=[])
 
-apply_grads_g = tf.Variable(False, dtype=tf.bool)
-apply_grads_d = tf.Variable(False, dtype=tf.bool)
+    G_opt = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(
+        learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08))
+    D_opt = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(
+        learning_rate=learning_rate, beta_1=0.5, beta_2=0.9, epsilon=1e-08))
+
+    step = tf.Variable(0, dtype=tf.int64, trainable=False)
+    ckpt_epoch = tf.Variable(0, dtype=tf.int64, trainable=False)
+    ckpt = tf.train.Checkpoint(step=step,
+                                epoch=ckpt_epoch,
+                                G_opt=G_opt,
+                                D_opt=D_opt,
+                                generator=generator,
+                                discrim_g=loss.discrim_g,
+                                discrim_l=loss.discrim_l)
+    ckpt_manager = tf.train.CheckpointManager(ckpt, directory=ckpt_path, max_to_keep=5)
+
+    apply_grads_g = tf.Variable(False, dtype=tf.bool)
+    apply_grads_d = tf.Variable(False, dtype=tf.bool)
 
 @tf.function(jit_compile=True)
 def fwd(groundtruth):
@@ -224,7 +208,7 @@ for epoch in range(ckpt_epoch.numpy(), args.epoch):
             for t in range(args.warmup_steps):
                 with tf.profiler.experimental.Trace("G warmup", step_num=t, _r=1):
                     images = train_im.get_next()
-                    loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = fwd(images)
+                    loss_G, loss_adv_G, loss_D, loss_rec, grad_g, grad_d, reconstruction = strategy.run(fwd, args=(images,))
                 if t % 20 == 0 and t != 0:
                     print("Step:", t)
                     tf.profiler.experimental.stop()

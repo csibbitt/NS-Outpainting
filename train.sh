@@ -18,7 +18,7 @@ time python train_model.py \
   --log-path ./logs/ \
   --num-gpu 1 \
 \
-  --batch-size 2 \
+  --batch-size 16 \
   --epoch 3 \
   --warmup-steps 40 \
   # --deterministic-seed 1 \
