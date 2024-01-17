@@ -4,6 +4,8 @@ checkpoint/*
 outputs/
 __pycache__
 dataset/*.tfr
+dataset/testset
+dataset/trainset
 logs/
 .ipynb_checkpoints/
 content

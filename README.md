@@ -1,13 +1,11 @@
 # WIP
 ## Migrating this code to Tensor Flow 2
 
-Initial migrations are complete, but many transitional compat APIs and deprecated methods remain.
-
-I'm learning TensorFlow as I go. This code has not yet been fully tested and may not work (Please send GPUs).
-
-I have done a partial training run (to Step ~75,000 before hitting the "NaN Detected" code) and the results are great.
-
 The model is being used as the core of an art project that makes never-ending landscape panoramas.
+
+Commit b4cb86ea has been trained on a 3090. ***** Will post results after a head-to-head comparison.
+
+I have migrated it to TF2 mixed precision and will be working on higher resolution.
 
 ## Known deviations for original model
 
@@ -25,7 +23,7 @@ The architecture has an ability to generate a very long high-quality prediction 
 
 ## Requirements and Preparation
 
-Please install `TensorFlow>=1.3.0`, `Python>=3.6`.
+Please install `TensorFlow>=2.12.0`, `Python>=3.10`.
 
 For training and testing, we collect a new outpainting dataset, which has 6,000 images containing complex natural scenes. You can download the raw dataset from [here](https://drive.google.com/file/d/15rGKgeNHWqjs90An7wpZXJMz-zFaC1q0/view?usp=sharing) and split the training and testing set by yourself. Or, you can get our split from [here](https://drive.google.com/file/d/1LDRx0W6zo_eCZwN92pGgGZSCrqzB3KZ6/view?usp=sharing) (TFRecord format, 128 resolution, 5,000 images for training and 1,000 for testing).
 
